@@ -7,6 +7,9 @@ z = model.activeSites(model.iAS).coord(3);
 zs = cellfun(@(x) x(1,3), model.epi);
 [~, iCross] = min(abs(zs - z));
 
+hLegend = [];
+textLegend = {};
+
 %iCross = ceil(numel(model.epi)/2);
 epi = model.epi{iCross};
 elec = model.electrode(:, iCross);
@@ -43,28 +46,36 @@ for iFasc = 1:numel(model.fiberActive)
     y = fibers.center(:,iCross,2);
     %sz = pi*(fibers.r/pointsPerDataUnit.^2);  % ISSUE works in points, not data units
     % Plot inactive fibers in black
-    scatter(x(~act), y(~act), 5, 'k', 'filled', 'PickableParts', 'none', 'HitTest', false);
+    scatter(x(~act), y(~act), 4, 'k', 'filled', 'PickableParts', 'none', 'HitTest', false);
     % Plot active fibers with current thresh. mapped to color
-    scatter(x(act), y(act), 5, activationCurr(act), 'filled', 'PickableParts', 'none', 'HitTest', false);
+    scatter(x(act), y(act), 4, activationCurr(act), 'filled', 'PickableParts', 'none', 'HitTest', false);
     if ~isempty(model.IaFiberId) && (iFasc == find(model.motorFasc == model.fascIds))
-        scatter(x(model.IaFiberId), y(model.IaFiberId), 5, 'or');
+        hAlpha = scatter(x(model.AlphaFiberId), y(model.AlphaFiberId), 4, 'og', 'PickableParts', 'none', 'HitTest', false);
+        hIa = scatter(x(model.IaFiberId), y(model.IaFiberId), 4, 'om', 'PickableParts', 'none', 'HitTest', false);
+        hIb = scatter(x(model.IbFiberId), y(model.IbFiberId), 4, 'oc', 'PickableParts', 'none', 'HitTest', false);
+        hLegend = [hLegend hIa hIb hAlpha];
+        textLegend = [textLegend {'Ia fibers', 'Ib fibers', 'Alpha motor fibers'}];
     end
 end
 
 % Mark edge of selected fascicles
 motorColor = [0 0 1];
 touchColor = [1 0 0];
-if model.motorFasc ~= 0
-    branches = model.endo.data{model.motorFasc, iCross};
-    for idBranch = 1 : numel(branches)
-        plot(branches{idBranch}(:,1), branches{idBranch}(:,2), 'Color', motorColor, 'LineWidth', 2);
-    end
-end
 if model.touchFasc ~= 0
     branches = model.endo.data{model.touchFasc, iCross};
     for idBranch = 1 : numel(branches)
-        plot(branches{idBranch}(:,1), branches{idBranch}(:,2), 'Color', touchColor, 'LineWidth', 2);
+        h = plot(branches{idBranch}(:,1), branches{idBranch}(:,2), 'Color', touchColor, 'LineWidth', 2);
     end
+    hLegend = [h hLegend];
+    textLegend = [{'Touch fascicle'} textLegend];
+end
+if model.motorFasc ~= 0
+    branches = model.endo.data{model.motorFasc, iCross};
+    for idBranch = 1 : numel(branches)
+        h = plot(branches{idBranch}(:,1), branches{idBranch}(:,2), 'Color', motorColor, 'LineWidth', 2);
+    end
+    hLegend = [h hLegend];
+    textLegend = [{'Motor fascicle'} textLegend];
 end
 
 % Plot electrode
@@ -73,5 +84,11 @@ plot(elec, 'FaceColor', [0.4 0.8 0.7]);
 % Plot active site position
 xy = model.activeSites(model.iAS).coord(1:2);
 plot(xy(1), xy(2),'or', 'LineWidth', 3)
+
+if numel(hLegend) > 0
+    legend(hLegend, textLegend, 'AutoUpdate', 'off');
+else
+    legend off;
+end
 
 end

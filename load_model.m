@@ -18,7 +18,7 @@ fascIds = find(fascIdsByAs(iAS,:));
 % Filter out fibers unreached by active site
 fibers = fibersPerFascicle(fascIds);
 
-model = Model(epi, endo_correct, electrode, activeSites, iAS, fascIds, fibers, fiberActive);
+model = Model(epi, endo_correct, electrode, activeSites, iAS, fascIds, fibers, 0:deltaQnC:qMaxnC, fiberActive);
 
 end
 

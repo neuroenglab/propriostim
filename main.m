@@ -13,10 +13,10 @@ selectionMode = '';
 
 % Setup figure
 fig = uifigure('HandleVisibility', 'on');  % to be able to 'close' it
-fig.Position = [100 100 820 620];
+fig.Position = [100 100 1080 500];
 g = uigridlayout(fig);
 g.RowHeight = {22, 22, 22, '1x'};
-g.ColumnWidth = {120,'1x','1x','1x','1x'};
+g.ColumnWidth = {200,'1x','1x','1x','1x'};
 
 uilabel(g, 'Text', 'Model selection:', 'FontWeight', 'bold');
 ddSubj = uidropdown(g,'Items', subjectNames, 'ValueChangedFcn', @selection_subj);
@@ -27,15 +27,22 @@ ddAs = uidropdown(g, 'Items', strcat({'AS '}, as), 'ItemsData', as, ...
 uibutton(g, 'Text', 'Load', 'ButtonPushedFcn', @load_button_pushed);
 
 uilabel(g, 'Text', 'Fascicles selection:', 'FontWeight', 'bold');
-lblMotorFascNo = 'No motor fascicle selected';
-lblMotorFasc = uilabel(g,'Text', lblMotorFascNo, 'HorizontalAlignment', 'right');
-btnMotorFasc = uibutton(g, 'Text', 'Select', 'ButtonPushedFcn', @motor_button_pushed);
-lblTouchFascNo = 'No reference touch fascicle selected';
-lblTouchFasc = uilabel(g, 'Text', lblTouchFascNo, 'HorizontalAlignment', 'right');
-btnTouchFasc = uibutton(g, 'Text', 'Select', 'ButtonPushedFcn', @touch_button_pushed);
+%lblMotorFascNo = 'No motor fascicle selected';
+%lblMotorFasc = uilabel(g,'Text', lblMotorFascNo, 'HorizontalAlignment', 'right');
+btnMotorFascText = 'Select motor fascicle';
+btnMotorFasc = uibutton(g, 'Text', btnMotorFascText, 'ButtonPushedFcn', @motor_button_pushed);
+btnMotorFasc.Layout.Column = [2 3];
+%lblTouchFascNo = 'No reference touch fascicle selected';
+%lblTouchFasc = uilabel(g, 'Text', lblTouchFascNo, 'HorizontalAlignment', 'right');
+btnTouchFascText = 'Select touch fascicle';
+btnTouchFasc = uibutton(g, 'Text', btnTouchFascText, 'ButtonPushedFcn', @touch_button_pushed);
+btnTouchFasc.Layout.Column = [4 5];
 
-uilabel(g, 'Text', 'Fibers selection:', 'FontWeight', 'bold');
+uilabel(g, 'Text', 'Motor fascicle fibers selection:', 'FontWeight', 'bold');
 btnMotorRandom = uibutton(g, 'Text', 'Random', 'ButtonPushedFcn', @random_button_pushed);
+btnMotorCluster = uibutton(g, 'Text', 'Cluster', 'ButtonPushedFcn', @cluster_button_pushed);
+ddPace = uidropdown(g, 'Items', {'Slow pace (2 s)', 'Mid pace (1.6 s)', 'Fast pace (1.2 s)'}, 'ItemsData', 1:3);
+btnRun = uibutton(g, 'Text', 'Run stimulation', 'ButtonPushedFcn', @run_button_pushed);
 
 axCross = uiaxes(g);
 axCross.Layout.Row = 4;
@@ -56,13 +63,15 @@ xlabel(axRecr, 'Injected Charge [nC]');
 ylabel(axRecr, 'Relative recruitment [%]');
 ylim(axRecr, [0 100]);
 title(axRecr, 'Recruitment');
-    
+
 refresh_view();
 
     function refresh_view()
         btnMotorFasc.Enable = ~isempty(model);
         btnTouchFasc.Enable = ~isempty(model);
         btnMotorRandom.Enable = ~isempty(model) && model.motorFasc ~= 0;
+        btnMotorCluster.Enable = btnMotorRandom.Enable;
+        btnRun.Enable = ~isempty(model) && ~isempty(model.IaFiberId) && model.touchFasc ~= 0;
         drawnow;
     end
 
@@ -81,22 +90,41 @@ refresh_view();
     end
 
     function motor_button_pushed(~, ~)
-        set_fasc_selection('motor');
+        draw_fasc_selection('motor');
     end
 
     function touch_button_pushed(~, ~)
-        set_fasc_selection('touch');
+        draw_fasc_selection('touch');
     end
 
     function random_button_pushed(~, ~)
         model = select_fibers(model, []);
         draw_cross_section();
-        %set_fasc_selection('touch');
+    end
+
+    function cluster_button_pushed(~, ~)
+        % Both with ginput and drawpoint there is an offset (MATLAB bug?),
+        % calibration necessary
+        axes(axCross);
+        h = [text(0.05, 1, 'Align for calibration.', 'Units', 'normalized', 'FontWeight', 'bold'), ...
+            xline(0), yline(0)];
+        [x0, y0] = ginput(1);  % Calibration
+        delete(h);
+        h = text(0.05, 1, 'Select center of Ia and Ib fibers', 'Units', 'normalized', 'FontWeight', 'bold');
+        drawnow;
+        [x, y] = ginput(2);
+        delete(h);
+        model = select_fibers(model, [x - x0, y - y0]);
+        draw_cross_section();
+    end
+
+    function run_button_pushed(~, ~)
+        proprio_stim(model, ddPace.Value);
     end
 
     function update_model()
         model = load_model(ddSubj.Value, ddElec.Value, ddAs.Value);
-        set_fasc_selection(); % Calls draw_cross_section too
+        draw_fasc_selection(); % Calls draw_cross_section too
     end
 
     function draw_cross_section()
@@ -116,18 +144,20 @@ refresh_view();
         switch selectionMode
             case ''
             case 'motor'
+                assert(fascPatch.UserData ~= model.touchFasc);
                 model.motorFasc = fascPatch.UserData;
                 model.IaFiberId = [];
                 model.IbFiberId = [];
                 model.AlphaFiberId = [];
-                set_fasc_selection();
+                draw_fasc_selection();
             case 'touch'
+                assert(fascPatch.UserData ~= model.motorFasc);
                 model.touchFasc = fascPatch.UserData;
-                set_fasc_selection();
+                draw_fasc_selection();
         end
     end
 
-    function set_fasc_selection(state)
+    function draw_fasc_selection(state)
         if nargin == 0
             state = '';
         end
@@ -135,14 +165,14 @@ refresh_view();
         if isempty(state)
             fig.Pointer = 'arrow';
             if model.motorFasc == 0
-                lblMotorFasc.Text = lblMotorFascNo;
+                btnMotorFasc.Text = btnMotorFascText;
             else
-                lblMotorFasc.Text = ['Motor fascicle: ' num2str(model.motorFasc)];
+                btnMotorFasc.Text = ['Reselect motor fascicle (no. ' num2str(model.motorFasc) ')'];
             end
             if model.touchFasc == 0
-                lblTouchFasc.Text = lblTouchFascNo;
+                btnTouchFasc.Text = btnTouchFascText;
             else
-                lblTouchFasc.Text = ['Reference touch fascicle: ' num2str(model.touchFasc)];
+                btnTouchFasc.Text = ['Reselect touch fascicle (no. ' num2str(model.touchFasc) ')'];
             end
             draw_cross_section();
         else
