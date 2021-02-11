@@ -110,6 +110,9 @@ refresh_view();
     end
 
     function fasc_click(fascPatch, ~)
+        if ~ismember(fascPatch.UserData, model.fascIds)
+            return;
+        end
         switch selectionMode
             case ''
             case 'motor'
