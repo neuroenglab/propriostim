@@ -1,0 +1,53 @@
+/* File description ***********************************************************/
+/* 
+Master of the sciatic nerve axon simulation process.
+
+a = ... just to avoid printing values in terminal !
+
+Modifier by Stéphanie Amati, EPFL, December 2014
+Modified by Ephraim Seidenberg, ETHZ, April-July 2020
+*/
+
+/* Libraries and files ********************************************************/
+// Libraries
+a = load_file("noload.hoc") 	// Load standard run system and other useful hoc 
+				   				// libraries
+// a = load_file("stdgui.hoc")
+
+// EPS commented out in favor of Ted Carnevale's patched version
+//a = xopen("sensory_final.hoc")	// Load an execute main .hoc
+
+// EPS copied, inserted and modified from init_motor_rev1.hoc by Ted Carnevale
+a = xopen("motor_rev1.hoc") // motor_final.hoc cleaned up a bit
+// mostly added some comments and got rid of some stuff
+
+/* Main ***********************************************************************/
+// Launch simulations until fiber is activated and write results in output file
+
+// BISECTION
+i_top = nbCurr+1  // min value tested positive
+i_bottom = 0  // max value tested negative
+while (i_top - i_bottom > 1) {
+	i_stim = int((i_top + i_bottom) / 2)
+	mod_factor = i_stim*deltaI
+	print mod_factor
+	activation = ExecuteSimulation(mod_factor)
+	if(activation) {
+		i_top = i_stim
+	} else {
+		i_bottom = i_stim
+	}
+}
+
+objectvar file
+file = new File()
+a = file.wopen("activation.dat")
+for (i_stim=1; i_stim<=nbCurr; i_stim+=1) {
+	if(i_stim < i_top) {
+		file.printf("%d\n", 0)
+	} else {
+		file.printf("%d\n", 1)
+	}
+}
+a = file.close()
+// quit()

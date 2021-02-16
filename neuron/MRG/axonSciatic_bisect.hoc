@@ -1,0 +1,50 @@
+/* File description ***********************************************************/
+/* 
+Master of the sciatic nerve axon simulation process.
+
+a = ... just to avoid printing values in terminal !
+
+Modifier by Stéphanie Amati, EPFL, December 2014
+*/
+
+/* Libraries and files ********************************************************/
+// Libraries
+a = load_file("noload.hoc") 	// Load standard run system and other useful hoc 
+				   				// libraries
+a = xopen("MRGaxon.hoc")		// Load an execute main .hoc
+
+/* Main ***********************************************************************/
+// Launch simulations until fiber is activated and write results in output file
+
+if (nbCurr == 60) {	//TODO: get via parameters	
+	// BISECTION
+	minActive = nbCurr+1  // min value tested positive
+	maxInactive = 0  // max value tested negative
+	while (minActive - maxInactive > 1) {
+		i_stim = int((minActive + maxInactive) / 2)
+		mod_factor = i_stim*deltaI
+		// print mod_factor
+		activation = ExecuteSimulation(mod_factor)
+		if(activation) {
+			minActive = i_stim
+		} else {
+			maxInactive = i_stim
+		}
+	}
+} else {
+	i_stim = 1
+	minActive = 0
+	activation = 0
+	while (!activation && i_stim <= nbCurr) {
+		mod_factor = i_stim*deltaI
+		// print mod_factor
+		activation = ExecuteSimulation(mod_factor)
+		if (activation) {
+			minActive = i_stim
+		}
+		i_stim+=1
+	}
+}
+
+print "threshold current step: ", minActive % (nbCurr + 1)
+// quit()
