@@ -18,7 +18,7 @@ axes(ax);
 cla(ax);
 
 % Plot epi
-plot(epi(:,1), epi(:,2),'k');
+patch(epi(:,1), epi(:,2),[0.9 0.9 0.9]);
 
 % Plot endo
 endoColor = [0.7 0.7 0.7];
@@ -50,9 +50,9 @@ for iFasc = 1:numel(model.fiberActive)
     % Plot active fibers with current thresh. mapped to color
     scatter(x(act), y(act), 4, activationCurr(act), 'filled', 'PickableParts', 'none', 'HitTest', false);
     if ~isempty(model.IaFiberId) && (iFasc == find(model.motorFasc == model.fascIds))
-        hAlpha = scatter(x(model.AlphaFiberId), y(model.AlphaFiberId), 4, 'og', 'PickableParts', 'none', 'HitTest', false);
-        hIa = scatter(x(model.IaFiberId), y(model.IaFiberId), 4, 'om', 'PickableParts', 'none', 'HitTest', false);
-        hIb = scatter(x(model.IbFiberId), y(model.IbFiberId), 4, 'oc', 'PickableParts', 'none', 'HitTest', false);
+        hAlpha = scatter(x(model.AlphaFiberId), y(model.AlphaFiberId), 4, 'xg', 'PickableParts', 'none', 'HitTest', false);
+        hIa = scatter(x(model.IaFiberId), y(model.IaFiberId), 4, 'xm', 'PickableParts', 'none', 'HitTest', false);
+        hIb = scatter(x(model.IbFiberId), y(model.IbFiberId), 4, 'xc', 'PickableParts', 'none', 'HitTest', false);
         hLegend = [hLegend hIa hIb hAlpha];
         textLegend = [textLegend {'Ia fibers', 'Ib fibers', 'Alpha motor fibers'}];
     end
