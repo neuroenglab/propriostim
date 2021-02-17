@@ -13,7 +13,7 @@ selectionMode = '';
 fig = uifigure('HandleVisibility', 'on');  % to be able to 'close' it
 fig.Position = [100 100 1080 500];
 g = uigridlayout(fig);
-g.RowHeight = {22, 22, 22, '1x'};
+g.RowHeight = {22, 22, 22, '1x', 22};
 g.ColumnWidth = {200,'1x','1x','1x','1x'};
 
 uilabel(g, 'Text', 'Model selection:', 'FontWeight', 'bold');
@@ -62,9 +62,13 @@ ylabel(axRecr, 'Relative recruitment [%]');
 ylim(axRecr, [0 100]);
 title(axRecr, 'Recruitment');
 
+btn3DView = uibutton(g, 'Text', '3D View (slow)', 'ButtonPushedFcn', @view_button_pushed);
+btn3DView.Layout.Column = 2;
+
 refresh_view();
 
     function refresh_view()
+        btn3DView.Enable = ~isempty(model);
         btnMotorFasc.Enable = ~isempty(model);
         btnTouchFasc.Enable = ~isempty(model);
         btnMotorRandom.Enable = ~isempty(model) && model.motorFasc ~= 0;
@@ -85,6 +89,10 @@ refresh_view();
 
     function load_button_pushed(~, ~)
         update_model();
+    end
+
+    function view_button_pushed(~, ~)
+        model.view();
     end
 
     function motor_button_pushed(~, ~)
