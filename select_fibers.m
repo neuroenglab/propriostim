@@ -1,6 +1,5 @@
 function model = select_fibers(model, clusterCenters)
-%SELECT_RANDOM_FIBERS Summary of this function goes here
-%   Detailed explanation goes here
+% If clusterCenters is empty, assign randomly
 
 fibers = model.fibers{model.fascIds == model.motorFasc};
 

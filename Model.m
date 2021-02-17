@@ -14,7 +14,9 @@ classdef Model
         IaFiberId,
         IbFiberId,
         AlphaFiberId,
-        IIFiberId
+        IIFiberId,
+        V,
+        referenceCurrent  % [A]
     end
     
     methods
@@ -36,6 +38,14 @@ classdef Model
                 currFiberActive = currFiberActive(fiberId);
             end
             recr = mean(currFiberActive > 0 & currFiberActive <= obj.Q);
+        end
+    end
+    
+    methods(Static)
+        function obj = with_potentials(epi, endo, electrode, activeSites, iAS, fascIds, fibers, V, referenceCurrent)
+            obj = Model(epi, endo, electrode, activeSites, iAS, fascIds, fibers, [], cell(numel(fascIds), 1));
+            obj.V = V;
+            obj.referenceCurrent = referenceCurrent;
         end
     end
 end

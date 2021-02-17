@@ -2,6 +2,7 @@
 /*
 2/02
 Cameron C. McIntyre
+
 SIMULATION OF PNS MYELINATED AXON
 
 This model is described in detail in:
@@ -18,367 +19,265 @@ limitations in v5.1 and can be used to run this model.
 Modified by Stéphanie Amati, EPFL, December 2014
 */
 
-/* Parameters and variables ****************************************/
-
-// Files to read
-//objectvar file_diam				// fiber diameter file
-//file_diam = new File()
-
-objectvar file_par				// fiber and simulation parameters file
-file_par=new File()
-
-objectvar file_Vext					// stimulation potential file
-file_Vext = new File()
-
-objectvar fileProba
-fileProba = new File()
-
-objectvar fileProbaRecord
-fileProbaRecord = new File()
-
-// Objets
-objectvar V						// stimulation potential
-
-objref fih						// initialization handler
-
-objref apc						// AP counter for a giver node (10 chosen here)
-objref apc1						// AP counter for another node (5 here)
-
-strdef naziv
-
-objref dv
-objref rect
-
-objref g
-
-/* Procedures and functions ***************************************************/
-
-// Procedure to load data from files (stimulation parameters, fiber diameter and
-// structure and external stmulation potential
-proc load_files(){
-	// Fiber diameter
-    //file_diam.ropen("diameter.txt")
-    
-    //D = file_diam.scanvar()
-    
-    //file_diam.close()
-    
-    // Fiber parameters
-    // Read in a file with following format:
-	// 'D','start', 'duration', 'deltai', 'nbCurr', 
-	// 'nbNod', 'nbSeg', 'nodeD', 'paraD1', 'paraD2', 
-	// 'interD', 'L', 'nodeL', 'paraL1', 'paraL2', 'interL', 'nbLam'
-	file_par.ropen("parameters.txt")
-	
-	D = file_par.scanvar()
-	start = file_par.scanvar()
-	duration = file_par.scanvar()
-	deltaI = file_par.scanvar()	
-	nbCurr = file_par.scanvar()			// attention changé nom
-	
-	nbNod = file_par.scanvar()			// attention changé nom
-	nbSeg = file_par.scanvar()			// rajouté par moi
-	
-	nodeD = file_par.scanvar()
-	paraD1 = file_par.scanvar()
-	paraD2 = file_par.scanvar()
-	interD = file_par.scanvar()			// attention changé nom
-	
-	nnL = file_par.scanvar()			// attention changé nom
-	nodeL = file_par.scanvar()			// rajouté par moi
-	paraL1 = file_par.scanvar()			// rajouté par moi, attention changé nom
-	paraL2 = file_par.scanvar()
-	interL = file_par.scanvar()
-	
-	nbLam = file_par.scanvar()			// attention changé nom
-					// print nbNod
-					// print nbSeg*(nbNod-1)+1
-	file_par.close()
-
-	// Stimulation potential
-		file_Vext.ropen("vext_data.txt")
-	V = new Vector(nbSeg*(nbNod-1)+1) 
-    for i=0,nbSeg*(nbNod-1){
-		V.x[i] = file_Vext.scanvar()
-	}
-	/*
-printf("%f\n",V.x[1])
-printf("%f\n",V.x[2])
-printf("%f\n",V.x[3])
-printf("%f\n",V.x[4])*/
-	
-    file_Vext.close()
-}
-
-// Load data from files (data)
-load_files()
-
 // Procedure to set constant parameters of the MRG model
-proc model_globels() {	
-	// General parameters
-	celsius = 37		// Temperature		
-	v_init = -80  		// Resting potential		
-
-	// Topological parameters		
-	axonnodes = nbNod  			
-	paranodes1 = (nbNod-1)*2		// 2 MYSA per section
-	paranodes2 = (nbNod-1)*2		// 2 FLUT per section
-	axoninter = (nbNod-1)*6			// 6 STIN per section			
-	axontotal = (nbNod-1)*nbSeg + 1 // Total number of elements in fiber
-				 
-	// Morphological parameters	
-	space_p1 = 0.002  				// Space between MYSA and ext layer [um]
-	space_p2 = 0.004				// Space between FLUT and ext layer [um]
-	space_i = 0.004					// Space between SLIN and ext layer [um]
+proc model_globels() {
+	// Human body temperature
+	celsius = 37 // [degrees C]
+	// Initial Resting Membrane Potential (RMP)
+	v_init = -80 // [mV]
+	// Topological parameters
+	// number of MYSA compartments per section
+	paranodes1 = (nbNod-1)*2
+	// number of FLUT compartments per section
+	paranodes2 = (nbNod-1)*2
+	// number of STIN compartments per section
+	axoninter = (nbNod-1)*6
 	
+	// Morphological parameters
+	// Space between MYSA and external layer (periaxonal)
+	space_p1 = 0.002 // [um]
+	// Space between FLUT and external layer (periaxonal)
+	space_p2 = 0.004 // [um]
+	// Space between STIN and external layer (periaxonal)
+	space_i = 0.004 // [um]
+
 	// Electrical parameters	
-	rhoa = 0.7e6 	// Axoplasmic resistivity [ohm*um]
-	mycm = 0.1 		// Myelin capacitance per lamella membrane (2 membranes per
-					// lamella) [uF/cm^2]
-	mygm = 0.001 	// Mylin conductance per lamella membrane (2 membranes per
-					// lamella) [S/cm^2]
+	// Axoplasmic resistivity
+	rhoa = 0.7e6 // [ohm*um]
+	// Myelin capacitance per lamella membrane (2 membranes per lamella)
+	mycm = 0.1 // [uF/cm^2]
+	// Myelin conductance per lamella membrane (2 membranes per lamella)
+	mygm = 0.001 // [S/cm^2]
 }
 
-// Set MRG constant parameters
 model_globels()
 
 // Procedure to compute parameters of the MRG that are dependant of the fiber
-// diameter
+// diameter, i.e. axonal resistivities at different levels, per section surface
 proc dependent_var() {
-	// Fiber axonal resistivities at different levels given per section surface
+	// Fiber 
 	// unit [Mohm/cm]
 	// 0.01 is to transform in Mohms/cm (1e-6*1e4 = 1e-2)
-	Rpn0 = (rhoa*.01)/(PI*((((nodeD/2)+space_p1)^2)-((nodeD/2)^2))) 	// Little space above node layer
-	Rpn1 = (rhoa*.01)/(PI*((((paraD1/2)+space_p1)^2)-((paraD1/2)^2)))	// Little space above MYSA layer
-	Rpn2 = (rhoa*.01)/(PI*((((paraD2/2)+space_p2)^2)-((paraD2/2)^2)))	// Little space above FLUT layer
-	Rpx = (rhoa*.01)/(PI*((((interD/2)+space_i)^2)-((interD/2)^2)))		// Little space above STIN layer
+	// axonal resistivities at different levels, per section surface
+	// unit [Mohm/cm] (using factor 0.01 = 1e-2 = 1e-6*1e4 for conversion from [ohms/um])
+	// Little space above node layer
+	Rpn0 = (rhoa*.01)/(PI*((((nodeD/2)+space_p1)^2)-((nodeD/2)^2)))
+	// Little space above MYSA layer
+	Rpn1 = (rhoa*.01)/(PI*((((paraD1/2)+space_p1)^2)-((paraD1/2)^2)))
+	// Little space above FLUT layer
+	Rpn2 = (rhoa*.01)/(PI*((((paraD2/2)+space_p2)^2)-((paraD2/2)^2)))
+	// Little space above STIN layer
+	Rpx = (rhoa*.01)/(PI*((((interD/2)+space_i)^2)-((interD/2)^2)))
 }
 
-// Set MRG D dependent variables
 dependent_var()
-
-// Procedure to create fibers model and initialize its parameters 
-// and mechanism
-// Just for info, default values of extracellular: vext[0] = vext[1] = 0 mV, 
-// i_membrane = 0 mA/cm^2, xraxial[1] = 1e9 Mohms/cm, xg[1] = 1e9 S/cm^2, 
-// xc[1] = 0 uF/cm^2, e_extracellular = 0 mV
 
 // Create sections composing a fiber basic structure (we have to do it here
 // because we don't know the size before ;)
-create node[axonnodes]
+create node[nbNod]
 create MYSA[paranodes1]
 create FLUT[paranodes2]
 create STIN[axoninter]
 
+// Procedure to create fiber model and initialize its parameters and mechanism
+// Just for info, default values of extracellular: vext[0] = vext[1] = 0 mV, 
+// i_membrane = 0 mA/cm^2, xraxial[1] = 1e9 Mohms/cm, xg[1] = 1e9 S/cm^2
 proc initialize(){
 	// Node sections
-	for i=0,axonnodes-1 {
-		node[i]{					
+	for i=0, nbNod-1 {
+		node[i]{
 			nseg = 1
-			diam = nodeD		// um
-			L = nodeL			// um
-			Ra = rhoa/10000		// ohm*cm (because we defined it in ohm*um)
-			cm = 2				// uF/cm^2
-			insert axnode		// modified HH equations		
-			insert extracellular{
-				xraxial = Rpn0	// Mohms/cm
-				xg = 1e10		// S/cm^2
-				xc = 0 			// uF/cm^2
-            	//xraxial[1] = 1e20
-            	// represents the axoplasm around node ?
+			diam = nodeD
+			L = nodeL
+			// cytoplasmic resistivity
+			Ra = rhoa/10000 // [ohm*cm] (converted from ohm*um)
+			// specific membrane capacitance
+			cm = 2 // [uF/cm^2]
+			// modified HH equations
+			insert axnode
+
+			// extracellular layer, i.e. small layer of 
+			// axoplasm and myelin sheath
+			insert extracellular {
+				// axial resistance
+				xraxial = Rpn0
+				// conductivity
+				xg = 1e10 // [S/cm^2]
+				// capacitance
+				xc = 0 // [uF/cm^2]
 			}
 		}
 	}
-		
+
 	// MYSA sections
 	for i=0, paranodes1-1 {
 		MYSA[i]{
-			nseg = 1		
-			diam = D							// um
-			L = paraL1							// um
-			Ra = rhoa*(1/(paraD1/D)^2)/10000	// ohm*cm with correction for
-												// diameter when resistance computed ;)
-			cm = 2*paraD1/D						// uf/cm^2 with correction again
-			insert pas{
-				g_pas = 0.001*paraD1/D			// mho/cm^2 with correction	
-				e_pas = v_init					// mV
+			nseg = 1
+			diam = D
+			L = paraL1
+			// cytoplasmic resistivity, corrected for diameter
+			Ra = rhoa*(1/(paraD1/D)^2)/10000 // [ohm*cm] (converted from ohm*um)
+			// specific membrane capacitance, corrected for diameter
+			cm = 2*paraD1/D // [uf/cm^2]
+			// passive membrane channel
+			insert pas {
+				// conductance, corrected for geometry
+				g_pas = 0.001*paraD1/D // [mho/cm^2]
+				// reversal potential
+				e_pas = v_init // [mV]
 			}
-			insert extracellular{
-				xraxial = Rpn1					// Mohms/cm
-				xg = mygm/(nbLam*2)				// s/cm^2
-				xc = mycm/(nbLam*2)				// uF/cm^2 
-				// represents small layer of axoplasm and myelin sheath
+			
+			// extracellular layer, i.e. small layer of 
+			// axoplasm and myelin sheath
+			insert extracellular {
+				// axial resistance
+				xraxial = Rpn1
+				// conductivity, corrected for number of lamella membranes
+				xg = mygm/(nbLam*2)
+				// capacitance, corrected for number of lamella membranes
+				xc = mycm/(nbLam*2)
 			}
 		}
 	}
-	
+
 	// FLUT sections
 	for i=0, paranodes2-1 {
 		FLUT[i]{
-			nseg = 1							
-			diam = D							// um
-			L = paraL2							// um
-			Ra = rhoa*(1/(paraD2/D)^2)/10000	// ohm*cm with correction
-			cm = 2*paraD2/D						// uf/cm^2 with correction again
-			insert pas{
-				g_pas = 0.0001*paraD2/D			// mho/cm^2 with correction	
-				e_pas = v_init					// mV
+			nseg = 1
+			diam = D
+			L = paraL2
+			// cytoplasmic resistivity, corrected for diameter
+			Ra = rhoa*(1/(paraD2/D)^2)/10000 // [ohm*cm] (converted from ohm*um)
+			// specific membrane capacitance, corrected for diameter
+			cm = 2*paraD2/D // [uf/cm^2]
+			// passive membrane channel
+			insert pas {
+				// conductance, corrected for geometry
+				g_pas = 0.0001*paraD2/D // [mho/cm^2]
+				// reversal potential
+				e_pas = v_init // [mV]
 			}
+			
+			// extracellular layer, i.e. small layer of 
+			// axoplasm and myelin sheath
 			insert extracellular{
-				xraxial = Rpn2 					// Mohms/cm
-				xg = mygm/(nbLam*2) 			// s/cm^2
-				xc = mycm/(nbLam*2)				// uF/cm^2 
-				// represents small layer of axoplasm and myelin sheath
+				// axial resistance
+				xraxial = Rpn2
+				// conductivity, corrected for number of lamella membranes
+				xg = mygm/(nbLam*2)
+				// capacitance, corrected for number of lamella membranes
+				xc = mycm/(nbLam*2)
 			}
 		}
 	}
-	
+
 	// STIN sections
 	for i=0, axoninter-1 {
 		STIN[i]{
 			nseg = 1
-			diam = D							// um 
-			L = interL							// um
-			Ra = rhoa*(1/(interD/D)^2)/10000	// ohm*cm with correction
-			cm = 2*interD/D						// uf/cm^2 with correction again
-			insert pas{
-				g_pas=0.0001*interD/D			// mho/cm^2 with correction	
-				e_pas=v_init					// mV
+			diam = D
+			L = interL
+			// cytoplasmic resistivity, corrected for diameter
+			Ra = rhoa*(1/(interD/D)^2)/10000 // ohm*cm (converted from ohm*um)
+			// specific membrane capacitance, corrected for diameter
+			cm = 2*interD/D
+			// passive membrane channel
+			insert pas {
+				// conductance, corrected for geometry
+				g_pas = 0.0001*interD/D // [mho/cm^2]
+				// reversal potential
+				e_pas = v_init // [mV]
 			}
+			
+			// extracellular layer, i.e. small layer of 
+			// axoplasm and myelin sheath
 			insert extracellular{
-				xraxial = Rpx 					// Mohms/cm
-				xg = mygm/(nbLam*2) 			// s/cm^2
-				xc = mycm/(nbLam*2) 			// uF/cm^2 
-				// represents small layer of axoplasm and myelin sheath
+				// axial resistance
+				xraxial = Rpx
+				// conductivity, corrected for number of lamella membranes
+				xg = mygm/(nbLam*2)
+				// capacitance, corrected for number of lamella membranes
+				xc = mycm/(nbLam*2)
 			}
 		}
 	}
-	
+
 	// Connect all sections to form fiber
-	for i=0, axonnodes-2 {
+	for i=0, nbNod-2 {
 		connect MYSA[2*i](0), node[i](1)
 		connect FLUT[2*i](0), MYSA[2*i](1)
+
 		connect STIN[6*i](0), FLUT[2*i](1)
 		connect STIN[6*i+1](0), STIN[6*i](1)
 		connect STIN[6*i+2](0), STIN[6*i+1](1)
 		connect STIN[6*i+3](0), STIN[6*i+2](1)
 		connect STIN[6*i+4](0), STIN[6*i+3](1)	
 		connect STIN[6*i+5](0), STIN[6*i+4](1)	
+
 		connect FLUT[2*i+1](0), STIN[6*i+5](1)
 		connect MYSA[2*i+1](0), FLUT[2*i+1](1)
-		connect node[i+1](0), MYSA[2*i+1](1)	
-	}	
+		connect node[i+1](0), MYSA[2*i+1](1)
+	}
 }
 
 // Create fiber
 initialize()
 
+// initialization handler
+objref fih
 // Set handler
 fih = new FInitializeHandler("initi()")
-
-// Set simulation parameters
-DUR = duration 			// Duration of each pulse [ms] 
-START = start  			// Time of first pulse [ms]
 
 // Procedure to initialize simulation when t = START (go to start_stim() procedure)
 proc initi() {
 	I_extracellular_0()
-	cvode.event(START, "start_stim()")
-	cvode.event(START + DUR, "stop_stim()")
+	cvode.event(start, "start_stim()")
+	cvode.event(start + duration, "stop_stim()")
 }
 
 // Procedure to set simulation parameters in function of simulation state given
 // by STIMON (0 = previously not stimulated, 1 = previously stimulated)
 proc start_stim() {
-
 	I_extracellular()
 	cvode.re_init()
-/*
-fileProbaRecord.printf("%f\n",node[0].v,dt)
-*/
-//fileProbaRecord.printf("%f\n",node[1].v)
-//fileProbaRecord.printf("%f\n",node[2].v)
 	dt = 0.001
-
 }
 
 proc stop_stim() {
-	
 	I_extracellular_0()
 	fcurrent()
 	dt = 0.001
-	
 }
 
 // Procedure to stimulate axon extracellularly
 proc I_extracellular(){
-	// Variable to count in potential vector
-	k=0
 	
 	// Set stimulation potential to all sections of the fiber
-    for i=0, axonnodes-2{
-        node[i].e_extracellular=-V.x[k]*mod_factor
-        
-    	k = k+1
-        MYSA[2*i].e_extracellular=-V.x[k]*mod_factor
-        
-    	k = k+1
-        FLUT[2*i].e_extracellular=-V.x[k]*mod_factor
-
-     	k=k+1
-		STIN[6*i].e_extracellular=-V.x[k]*mod_factor
-		
-     	k=k+1    
-		STIN[6*i+1].e_extracellular=-V.x[k]*mod_factor
-		
-     	k=k+1
-		STIN[6*i+2].e_extracellular=-V.x[k]*mod_factor
-		
-    	k=k+1
-		STIN[6*i+3].e_extracellular=-V.x[k]*mod_factor
-		
-    	k=k+1
-		STIN[6*i+4].e_extracellular=-V.x[k]*mod_factor
-		
-    	k=k+1
-		STIN[6*i+5].e_extracellular=-V.x[k]*mod_factor     
-   
-    	k=k+1
-    	
-        FLUT[2*i+1].e_extracellular=-V.x[k]*mod_factor
-        
-     	k=k+1
-        MYSA[2*i+1].e_extracellular=-V.x[k]*mod_factor
-        
-    	k=k+1
+    for i=0, nbNod-2{
+		// start position of the current section in terms of compartments
+		sectStart = i * nComparts
+		node[i].e_extracellular = -V.x[sectStart]*mod_factor
+		MYSA[2*i].e_extracellular = -V.x[sectStart+1]*mod_factor
+		FLUT[2*i].e_extracellular = -V.x[sectStart+2]*mod_factor
+		STIN[6*i].e_extracellular = -V.x[sectStart+3]*mod_factor
+		STIN[6*i+1].e_extracellular = -V.x[sectStart+4]*mod_factor
+		STIN[6*i+2].e_extracellular = -V.x[sectStart+5]*mod_factor
+		STIN[6*i+3].e_extracellular = -V.x[sectStart+6]*mod_factor
+		STIN[6*i+4].e_extracellular = -V.x[sectStart+7]*mod_factor
+		STIN[6*i+5].e_extracellular = -V.x[sectStart+8]*mod_factor
+		FLUT[2*i+1].e_extracellular = -V.x[sectStart+9]*mod_factor
+		MYSA[2*i+1].e_extracellular = -V.x[sectStart+10]*mod_factor
 	}
-	
-	// print node[10].e_extracellular
-	// print node[5].e_extracellular
     
     // Set last node
-    node[axonnodes-1].e_extracellular=-V.x[k]*mod_factor  
-	
-/*
-fileProbaRecord.printf("%f\n",node[0].v,dt)
-//fileProbaRecord.printf("%f\n",node[1].v)
-//fileProbaRecord.printf("%f\n",node[2].v)
-print dv
-*/	
-	
-	/*sprint(naziv,"%s%d%s", "voltages", c, ".dat")
-	a = fileProba.wopen(naziv)
-	for i=0, axonnodes-1{
-		fileProba.printf("%f\n",node[i].v)
-		fileProba.printf("%f\n",node[i].e_extracellular)
-		//fileProba.printf("%f\n",node[i].vext)
-	}*/
+    node[nbNod-1].e_extracellular=-V.x[V.size()-1]*mod_factor
+
 }
 
 // Procedure to stop stimulating axon extracellularly (I = 0)
-proc I_extracellular_0(){
+proc I_extracellular_0() {
 	// Set stimulation to zero for all sections of the fiber
-	for i=0, axonnodes-2{
+	for i=0, nbNod-2 {
 		node[i].e_extracellular=0
      	MYSA[2*i].e_extracellular=0
       	FLUT[2*i].e_extracellular=0
@@ -391,111 +290,54 @@ proc I_extracellular_0(){
         FLUT[2*i+1].e_extracellular=0
         MYSA[2*i+1].e_extracellular=0
 	}
-	
     // Set last node
-    node[axonnodes-1].e_extracellular=0
+    node[nbNod-1].e_extracellular=0
 }
 
-// Function that launches simulation for one mod_factor given as input
-func ExecuteSimulation(){ local id
-	// Set simulation parameters		
-	mod_factor = $1		// Set mod_factorlitude modulator as input parameter 1
-	c = mod_factor/deltaI
-	
-	tstop = 1.4		// Set stopping time to 1.4ms
-	dt = 0.001		// Set smod_factorling time to 0.001ms
 
-	// Put AP counter on middle of nodes 11 and 20 with threshold 0mv (on v, not
-	// on extracellular layers)
+// Function that launches simulation for one mod_factor given as input
+func ExecuteSimulation() {
+
+	// Set simulation parameters
+	// amplitude modulator as input parameter 1
+	mod_factor = $1
+	// Set stopping time to 1.4ms
+	tstop = 1.4
+	// Set integration time interval to 0.001ms
+	dt = 0.001
+
+	// Put AP counter on center of nodes in middle and end of fiber with 
+	// threshold 0mv (on v, not on extracellular layers)
 	// middle node
-	node[int(axonnodes / 2 + .5) - 1] {
-		apc = new APCount(0.5)
-		apc.thresh = 0
+	node[int(nbNod / 2 + .5) - 1] {
+		apcMiddle = new APCount(0.5)
+		apcMiddle.thresh = 0
 	}
 	// end node
-	node[axonnodes - 1]{
-		apc1 = new APCount(0.5)
-		apc1.thresh = 0
+	node[nbNod - 1]{
+		apcEnd = new APCount(0.5)
+		apcEnd.thresh = 0
 	}
-	access node[axonnodes - 1]
-	
+	access node[nbNod - 1] // TODO: try without this
+
 	// Performs initialization in several steps:
 	// - sets t = 0
 	// - initialize all sections membrane potential with v_init (node/paranode)
 	// - calls FInitializeHandlers: here we have only fih which points on the 
 	//   procedure initi() 
 	// - executes all INITIAL blocks of the sections mechanisms	(.mod)
-	v_init = -80		// Resting potential [mV]
-	
-//printf("%s\n","ExecuteSimulation Pre")
-//printf("%d\n",apc.n)
-
-	
-/*
-//
-dv = new Vector()
-rect = new Vector()
-//print node[2].v(.5)
-dv.record(&node[2].v(.5))
-		rect.record(&t)
-		rect.printf()
-b = fileProbaRecord.wopen("dv")
-*/
-/*fileProbaRecord.printf("%f\n",node[2].v)
-print dv*/
-//
-
 	finitialize(v_init)
-	//load_file("plot.hoc")
-	
-/*//
-dv = new Vector()
-//print node[2].v(.5)
-dv.record(&node[2].v(.5))
-b = fileProbaRecord.wopen("dv")
-fileProbaRecord.printf("%f\n",node[2].v)
-print dv
-//*/
 	
 	// Start simulation (t starts to go)
-	// When t = START, seti() is called for the first time and since calls are
+	// When t = start, initi() is called for the first time and since calls are
 	// launched within the function, the simulation will follow its instructions
 	// until t = tstop ;)
 	run()
-	
-/*
-sprint(naziv,"%s%d%s", "voltages", c, ".dat")
-a = fileProba.wopen(naziv)
-for i=0, axonnodes-1{
-	fileProba.printf("%f\n",node[i].v)
-	fileProba.printf("%f\n",node[i].vext)
-}
-*/
-		
-//printf("%s\n","ExecuteSimulation")
-//printf("%d\n",apc.n)
-		
-		
-/*// Graph
-g = new Graph()
-g.size(0, 10, -100, 50)
-g.beginline() 
-for(x=0; x<=10; x=x+0.05){   //States that x values to be plotted
-                            //will go from 0 to 10 in increments
-                            //of 0.1.
-    g.line(x, node[2].v)       //States that the y values on the plot
-                            //will be the sin of the x values.
-}
-g.flush()   //Actually draws the plot on the graph in the window.
-//*/
 
-	// If threshold crossed (AP generated) on both nodes (11 and 20), return 
-	// mod_factor+1 (because apc.n gives number of times crossed threshold)
-	// return mod_factor+0 otherwise (all this after simulation of tstop seconds of
-	// course ;)
-	//print apc.n
-	//print apc1.n
-	if (apc.n>0 && apc1.n>0){
+	// If threshold crossed (AP generated) on both nodes (middle and end), return 
+	// mod_factor+1 (because apcMiddle.n gives number of times crossed threshold)
+	// return mod_factor+0 otherwise
+	if (apcMiddle.n>0 && apcEnd.n>0){
 		return 1
 	} else{
 		return 0

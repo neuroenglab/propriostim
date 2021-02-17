@@ -1,6 +1,4 @@
 function plot_recruitment(model, ax)
-%PLOT_RECRUITMENT Summary of this function goes here
-%   Detailed explanation goes here
 
 axes(ax);
 cla();
