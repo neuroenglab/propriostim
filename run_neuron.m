@@ -1,7 +1,7 @@
 function run_neuron()
 %% Setup
 config = load('config.mat');
-MRG = load('data/MRG_coeff.mat');
+MRG_coeff = load('data/MRG_coeff.mat');
 
 asList = arrayfun(@num2str, 1:4, 'UniformOutput', false);
 [iAS, tf] = listdlg('PromptString', 'Select active site', 'ListString', asList, 'SelectionMode', 'single');
@@ -29,6 +29,7 @@ V = cellfun(@(v) v * currentFor1nC / model.referenceCurrent, V, 'UniformOutput',
 thr = nan(height(fibers), 1);
 r = fibers.r;
 motor = model.AlphaFiberId;
+tic();
 parfor iFiber = 1:height(fibers)
     if gaines
         if ismember(iFiber, motor)
@@ -39,11 +40,18 @@ parfor iFiber = 1:height(fibers)
     else
         nrnModel = 'MRG';
     end
-    thr(iFiber) = find_threshold(iFiber, r(iFiber), V{iFiber}, nrnModel, config, MRG);
+    thr(iFiber) = find_threshold(iFiber, r(iFiber), V{iFiber}, nrnModel, config, MRG_coeff);
 end
+t = toc();
+fprintf('Simulation completed, mean time %.3f s per fiber\n', t/height(fibers));
 
 model.Q = 0:config.deltaQnC:config.qMaxnC;
 model.fiberActive{iFasc} = thr;
+if gaines
+    model.nrnModel = 'Gaines';
+else
+    model.nrnModel = 'MRG';
+end
 
 dateString = datestr(now, 'yymmdd_HHMMSS');
 counter = 1;
@@ -62,15 +70,7 @@ end
 fprintf('Saving model in %s...\n', runPath);
 save(runPath, 'model');
 
-%% Plot
-figure;
-tiledlayout(2, 1);
-nexttile;
-prepare_plot_cross_section(gca());
-plot_cross_section(model, gca());
-nexttile;
-prepare_plot_recruitment(gca());
-plot_recruitment(model, gca());
+view_run(model);
 
 end
 

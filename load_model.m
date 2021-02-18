@@ -18,7 +18,8 @@ if loadPotentials
     load(['data\Potential\' modelName '\potentials_' modelNameAS '.mat'], 'Vs', 'currentDensityAm2');
     referenceCurrent = currentDensityAm2 * 0.08e-3^2 * pi;
 else
-    load(['data\Recruitment\' modelName '\MRG\recruitment_1_' modelNameAS '.mat'], 'fiberActive', 'deltaQnC', 'qMaxnC');
+    nrnModel = 'MRG';  % TODO allow selection
+    load(['data\Recruitment\' modelName '\' nrnModel '\recruitment_1_' modelNameAS '.mat'], 'fiberActive', 'deltaQnC', 'qMaxnC');
 end
 
 %fascIdsAllAs = find(any(fascIdsByAs));
@@ -30,7 +31,7 @@ fibers = fibersPerFascicle(fascIds);
 if loadPotentials
     model = Model.with_potentials(epi, endo_correct, electrode, activeSites, iAS, fascIds, fibers, Vs, referenceCurrent);
 else
-    model = Model(epi, endo_correct, electrode, activeSites, iAS, fascIds, fibers, 0:deltaQnC:qMaxnC, fiberActive);
+    model = Model(epi, endo_correct, electrode, activeSites, iAS, fascIds, fibers, 0:deltaQnC:qMaxnC, fiberActive, nrnModel);
 end
 
 end

@@ -9,6 +9,7 @@ classdef Model
         fibers,
         Q,
         fiberActive,
+        nrnModel,
         motorFasc = 0,
         refFasc = 0,
         IaFiberId,
@@ -20,7 +21,7 @@ classdef Model
     end
     
     methods
-        function obj = Model(epi, endo, electrode, activeSites, iAS, fascIds, fibers, Q, fiberActive)
+        function obj = Model(epi, endo, electrode, activeSites, iAS, fascIds, fibers, Q, fiberActive, nrnModel)
             obj.epi = epi;
             obj.endo = endo;
             obj.electrode = electrode;
@@ -30,6 +31,7 @@ classdef Model
             obj.fibers = fibers;
             obj.Q = Q;
             obj.fiberActive = fiberActive;
+            obj.nrnModel = nrnModel;
         end
         
         function recr = recruitment(obj, iFasc, fiberId)

@@ -1,4 +1,4 @@
-function fibThreshold = find_threshold(fibId, rFib, fiberV, nrnModel, config, MRG)
+function fibThreshold = find_threshold(fibId, rFib, fiberV, nrnModel, config, MRG_coeff)
 
 switch nrnModel
     case 'Gaines/Motor'
@@ -21,7 +21,7 @@ if any(isnan(compartSelectedV))
     [compartSelectedV, nNodeSelected] = select_v_comparts(fiberV, config.nbNod, 11);
 end
 
-nrnArgStr = make_param_str_argvec(rFib, MRG, config.stimStart, config.stimDur, ...
+nrnArgStr = make_param_str_argvec(rFib, MRG_coeff, config.stimStart, config.stimDur, ...
     nNodeSelected, compartSelectedV);
 
 sysNrnCall = sprintf(['cd /d "%s" & %s\\bin\\nrniv.exe -nobanner -nopython "..\\init.hoc" ' ...
@@ -48,25 +48,25 @@ else
 end
 end
 
-function nrnArgStr = make_param_str_argvec(rFib, MRG, start, stimDur, ...
+function nrnArgStr = make_param_str_argvec(rFib, MRG_coeff, start, stimDur, ...
     nNodeSelected, compartSelectedV)
 % Saves MRG model parameters to file (for NEURON)
 
 % Diameter for the fiber
 D = 2 * rFib;
 % Don't forget that nodeL and paraL1 are constant ;)
-nodeD = polyval(MRG.nodeDC, D);		 % node diameter
-paraD1 = polyval(MRG.paraD1C, D);	   % MYSA diameter (equal to node)
-paraD2 = polyval(MRG.paraD2C, D);	   % FLUT diameter
-interD = polyval(MRG.interDC, D);	   % STIN diameter (equal to FLUT)
+nodeD = polyval(MRG_coeff.nodeDC, D);		 % node diameter
+paraD1 = polyval(MRG_coeff.paraD1C, D);	   % MYSA diameter (equal to node)
+paraD2 = polyval(MRG_coeff.paraD2C, D);	   % FLUT diameter
+interD = polyval(MRG_coeff.interDC, D);	   % STIN diameter (equal to FLUT)
 
-nnL = polyval(MRG.nnLC, D);					 % internodal length
-nodeL = MRG.nodeL;							  % node length
-paraL1 = MRG.paraL1;							% MYSA length
-paraL2 = polyval(MRG.paraL2C, D);			   % FLUT length
+nnL = polyval(MRG_coeff.nnLC, D);					 % internodal length
+nodeL = MRG_coeff.nodeL;							  % node length
+paraL1 = MRG_coeff.paraL1;							% MYSA length
+paraL2 = polyval(MRG_coeff.paraL2C, D);			   % FLUT length
 interL = (nnL-nodeL-(2*paraL1)-(2*paraL2))/6;   % SLIT length (one seg)
 
-nbLam = polyval(MRG.nbLamC, D);		 % number of myelin lamella
+nbLam = polyval(MRG_coeff.nbLamC, D);		 % number of myelin lamella
 
 nrnArgStr = [sprintf('%.10g,', D, start, stimDur, nNodeSelected, ...
     nodeD, paraD1, paraD2, interD, nnL, nodeL, paraL1, paraL2, interL, nbLam, ...
