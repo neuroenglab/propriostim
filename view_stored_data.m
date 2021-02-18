@@ -1,10 +1,8 @@
-function main()
+function view_stored_data()
 
 close all;
 
-subjectNames = {'Subject1','Subject3'};
-placements = {'TIME4H_8','TIME4H_11','TIME4H_14','TIME4H_15';
-    'TIME4H_?','TIME4H_?','TIME4H_?','TIME4H_?'};
+[subjects, electrodes] = scrape_stored_data();
 
 model = [];
 selectionMode = '';
@@ -17,8 +15,8 @@ g.RowHeight = {22, 22, 22, '1x', 22};
 g.ColumnWidth = {200,'1x','1x','1x','1x'};
 
 uilabel(g, 'Text', 'Model selection:', 'FontWeight', 'bold');
-ddSubj = uidropdown(g,'Items', subjectNames, 'ValueChangedFcn', @selection_subj);
-ddElec = uidropdown(g,'Items', placements(1,:), 'ValueChangedFcn', @selection_elec_as);
+ddSubj = uidropdown(g,'Items', subjects, 'ValueChangedFcn', @selection_subj);
+ddElec = uidropdown(g,'Items', electrodes{1}, 'ValueChangedFcn', @selection_elec_as);
 as = arrayfun(@num2str, 1:14, 'UniformOutput', false);
 ddAs = uidropdown(g, 'Items', strcat({'AS '}, as), 'ItemsData', as, ...
     'Value', '1', 'ValueChangedFcn', @selection_elec_as);
@@ -64,7 +62,7 @@ refresh_view();
     end
 
     function selection_subj(~, ~)
-        ddElec.Items = placements(strcmp(subjectNames, ddSubj.Value),:);
+        ddElec.Items = electrodes{strcmp(subjects, ddSubj.Value)};
         ddElec.Value = ddElec.Items{1};
     end
 
