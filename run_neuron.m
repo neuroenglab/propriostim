@@ -3,10 +3,13 @@ function run_neuron()
 config = load('config.mat');
 MRG_coeff = load('data/MRG_coeff.mat');
 
+subject = 'Subject1';
+electrode = 'TIME4H_8';
+
 asList = arrayfun(@num2str, 1:4, 'UniformOutput', false);
 [iAS, tf] = listdlg('PromptString', 'Select active site', 'ListString', asList, 'SelectionMode', 'single');
 if ~tf, return; end
-model = load_model('Subject1', 'TIME4H_8', asList{iAS}, true);
+model = load_model(subject, electrode, asList{iAS}, true);
 
 [iFasc, tf] = listdlg('PromptString', 'Select fascicle', 'ListString', arrayfun(@num2str, model.fascIds, 'UniformOutput', false), 'SelectionMode', 'single');
 if ~tf, return; end
@@ -54,17 +57,14 @@ else
 end
 
 dateString = datestr(now, 'yymmdd_HHMMSS');
-counter = 1;
-while true
-    if counter == 1
-        runName = dateString;
-    else
-        % Very unlikely
-        runName = [dateString '_' counter];
-    end
-    runPath = ['data/runs/model_' runName '.mat'];
-    if ~isfile(runPath), break; end
+baseRunPath = ['data\runs\' strjoin({subject, electrode, ['AS' asList{iAS}], ...
+    ['fasc' num2str(model.motorFasc)], model.nrnModel, dateString}, '_')];
+runPath = [baseRunPath '.mat'];
+counter = 0;
+while isfile(runPath)
+    % Very unlikely
     counter = counter + 1;
+    runPath = [baseRunPath '_' counter '.mat'];
 end
 
 fprintf('Saving model in %s...\n', runPath);

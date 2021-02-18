@@ -9,7 +9,7 @@ classdef Model
         fibers,
         Q,
         fiberActive,
-        nrnModel,
+        nrnModel = '',
         motorFasc = 0,
         refFasc = 0,
         IaFiberId,
@@ -112,7 +112,7 @@ classdef Model
     
     methods(Static)
         function obj = with_potentials(epi, endo, electrode, activeSites, iAS, fascIds, fibers, V, referenceCurrent)
-            obj = Model(epi, endo, electrode, activeSites, iAS, fascIds, fibers, [], cell(numel(fascIds), 1));
+            obj = Model(epi, endo, electrode, activeSites, iAS, fascIds, fibers, [], cell(numel(fascIds), 1), '');
             obj.V = V;
             obj.referenceCurrent = referenceCurrent;
         end
