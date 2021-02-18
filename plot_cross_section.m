@@ -2,6 +2,10 @@ function plot_cross_section(model, ax, fascClickCallback)
 %LOAD_CROSS_SECTION Summary of this function goes here
 %   Detailed explanation goes here
 
+if nargin < 3
+    fascClickCallback = @(~, ~) [];
+end
+
 % Choose z closest to the active site
 z = model.activeSites(model.iAS).coord(3);
 zs = cellfun(@(x) x(1,3), model.epi);
@@ -86,7 +90,7 @@ xy = model.activeSites(model.iAS).coord(1:2);
 plot(xy(1), xy(2),'or', 'LineWidth', 3)
 
 if numel(hLegend) > 0
-    legend(hLegend, textLegend, 'AutoUpdate', 'off');
+    legend(hLegend, textLegend, 'AutoUpdate', false);
 else
     legend off;
 end

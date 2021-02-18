@@ -45,22 +45,12 @@ btnRun = uibutton(g, 'Text', 'Run stimulation', 'ButtonPushedFcn', @run_button_p
 axCross = uiaxes(g);
 axCross.Layout.Row = 4;
 axCross.Layout.Column = [1 3];
-hold(axCross, 'on');
-axis(axCross, 'equal');
-title(axCross, 'Cross-section');
-xlabel(axCross, 'x [um]');
-ylabel(axCross, 'y [um]');
-colormap(axCross, flipud(parula));
-c = colorbar(axCross);
-c.Label.String = 'Charge threshold [nC]';
+prepare_plot_cross_section(axCross);
 
 axRecr = uiaxes(g);
 axRecr.Layout.Row = 4;
 axRecr.Layout.Column = [4 5];
-xlabel(axRecr, 'Injected Charge [nC]');
-ylabel(axRecr, 'Relative recruitment [%]');
-ylim(axRecr, [0 100]);
-title(axRecr, 'Recruitment');
+prepare_plot_recruitment(axRecr);
 
 btn3DView = uibutton(g, 'Text', '3D View (slow)', 'ButtonPushedFcn', @view_button_pushed);
 btn3DView.Layout.Column = 2;

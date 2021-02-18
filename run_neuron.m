@@ -64,6 +64,12 @@ save(runPath, 'model');
 
 %% Plot
 figure;
+tiledlayout(2, 1);
+nexttile;
+prepare_plot_cross_section(gca());
+plot_cross_section(model, gca());
+nexttile;
+prepare_plot_recruitment(gca());
 plot_recruitment(model, gca());
 
 end
