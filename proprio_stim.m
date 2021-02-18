@@ -10,7 +10,9 @@ recrIa = model.recruitment(model.motorFasc, model.IaFiberId);
 recrIb = model.recruitment(model.motorFasc, model.IbFiberId);
 recrAlpha = model.recruitment(model.motorFasc, model.AlphaFiberId);
 recrII = model.recruitment(model.motorFasc, model.IIFiberId);
-recrTouch = model.recruitment(model.touchFasc);
+if model.refFasc
+    recrRef = model.recruitment(model.refFasc);
+end
 
 % TODO choose Lateral/Medial
 [~, iStim] = min(abs(recrIa - proprioSim_recruitment_rate(:, 1, iPace)), [], 2);
@@ -39,8 +41,12 @@ plot(t, recrIa(iStim), 'm', 'LineWidth', 1);
 plot(t, recrIb(iStim), 'c', 'LineWidth', 1);
 plot(t, recrAlpha(iStim), 'g', 'LineWidth', 1);
 plot(t, recrII(iStim), 'y', 'LineWidth', 1);
-plot(t, recrTouch(iStim), 'r', 'LineWidth', 1);
-legend('Ia fibers', 'Ib fibers', 'Alpha motor fibers', 'II fibers', 'Touch fascicle');
+if model.refFasc
+    plot(t, recrRef(iStim), 'r', 'LineWidth', 1);
+    legend('Ia fibers', 'Ib fibers', 'Alpha motor fibers', 'II fibers', 'Reference fascicle');
+else
+    legend('Ia fibers', 'Ib fibers', 'Alpha motor fibers', 'II fibers');
+end
 xlabel('t [s]');
 title('Recruitment');
 

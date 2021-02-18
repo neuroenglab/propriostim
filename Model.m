@@ -10,7 +10,7 @@ classdef Model
         Q,
         fiberActive,
         motorFasc = 0,
-        touchFasc = 0,
+        refFasc = 0,
         IaFiberId,
         IbFiberId,
         AlphaFiberId,

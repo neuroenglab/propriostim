@@ -64,14 +64,14 @@ end
 
 % Mark edge of selected fascicles
 motorColor = [0 0 1];
-touchColor = [1 0 0];
-if model.touchFasc ~= 0
-    branches = model.endo.data{model.touchFasc, iCross};
+refColor = [1 0 0];
+if model.refFasc ~= 0
+    branches = model.endo.data{model.refFasc, iCross};
     for idBranch = 1 : numel(branches)
-        h = plot(branches{idBranch}(:,1), branches{idBranch}(:,2), 'Color', touchColor, 'LineWidth', 2);
+        h = plot(branches{idBranch}(:,1), branches{idBranch}(:,2), 'Color', refColor, 'LineWidth', 2);
     end
     hLegend = [h hLegend];
-    textLegend = [{'Touch fascicle'} textLegend];
+    textLegend = [{'Reference fascicle'} textLegend];
 end
 if model.motorFasc ~= 0
     branches = model.endo.data{model.motorFasc, iCross};

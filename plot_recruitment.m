@@ -17,10 +17,10 @@ if model.motorFasc ~= 0
         l = [l {'Ia fibers', 'Ib fibers', 'Alpha Motor fibers'}];
     end
 end
-if model.touchFasc ~= 0
-    recrTouch = model.recruitment(model.touchFasc);
-    plot(Q, recrTouch*100, 'r', 'LineWidth', 1);
-    l = [l {'Touch fascicle'}];
+if model.refFasc ~= 0
+    recrRef = model.recruitment(model.refFasc);
+    plot(Q, recrRef*100, 'r', 'LineWidth', 1);
+    l = [l {'Reference fascicle'}];
 end
 
 legend(l);

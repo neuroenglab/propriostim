@@ -25,16 +25,12 @@ ddAs = uidropdown(g, 'Items', strcat({'AS '}, as), 'ItemsData', as, ...
 uibutton(g, 'Text', 'Load', 'ButtonPushedFcn', @load_button_pushed);
 
 uilabel(g, 'Text', 'Fascicles selection:', 'FontWeight', 'bold');
-%lblMotorFascNo = 'No motor fascicle selected';
-%lblMotorFasc = uilabel(g,'Text', lblMotorFascNo, 'HorizontalAlignment', 'right');
 btnMotorFascText = 'Select motor fascicle';
 btnMotorFasc = uibutton(g, 'Text', btnMotorFascText, 'ButtonPushedFcn', @motor_button_pushed);
 btnMotorFasc.Layout.Column = [2 3];
-%lblTouchFascNo = 'No reference touch fascicle selected';
-%lblTouchFasc = uilabel(g, 'Text', lblTouchFascNo, 'HorizontalAlignment', 'right');
-btnTouchFascText = 'Select touch fascicle';
-btnTouchFasc = uibutton(g, 'Text', btnTouchFascText, 'ButtonPushedFcn', @touch_button_pushed);
-btnTouchFasc.Layout.Column = [4 5];
+btnRefFascText = 'Select reference fascicle';
+btnRefFasc = uibutton(g, 'Text', btnRefFascText, 'ButtonPushedFcn', @ref_button_pushed);
+btnRefFasc.Layout.Column = [4 5];
 
 uilabel(g, 'Text', 'Motor fascicle fibers selection:', 'FontWeight', 'bold');
 btnMotorRandom = uibutton(g, 'Text', 'Random', 'ButtonPushedFcn', @random_button_pushed);
@@ -60,10 +56,10 @@ refresh_view();
     function refresh_view()
         btn3DView.Enable = ~isempty(model);
         btnMotorFasc.Enable = ~isempty(model);
-        btnTouchFasc.Enable = ~isempty(model);
+        btnRefFasc.Enable = ~isempty(model);
         btnMotorRandom.Enable = ~isempty(model) && model.motorFasc ~= 0;
         btnMotorCluster.Enable = btnMotorRandom.Enable;
-        btnRun.Enable = ~isempty(model) && ~isempty(model.IaFiberId) && model.touchFasc ~= 0;
+        btnRun.Enable = ~isempty(model) && ~isempty(model.IaFiberId);
         drawnow;
     end
 
@@ -86,11 +82,21 @@ refresh_view();
     end
 
     function motor_button_pushed(~, ~)
-        draw_fasc_selection('motor');
+        if model.motorFasc == 0
+            draw_fasc_selection('motor');
+        else
+            model.motorFasc = 0;
+            draw_fasc_selection();
+        end
     end
 
-    function touch_button_pushed(~, ~)
-        draw_fasc_selection('touch');
+    function ref_button_pushed(~, ~)
+        if model.refFasc == 0
+            draw_fasc_selection('ref');
+        else
+            model.refFasc = 0;
+            draw_fasc_selection();
+        end
     end
 
     function random_button_pushed(~, ~)
@@ -125,7 +131,7 @@ refresh_view();
 
     function draw_cross_section()
         plot_cross_section(model, axCross, @fasc_click);
-        if model.motorFasc ~= 0 || model.touchFasc ~= 0
+        if model.motorFasc ~= 0 || model.refFasc ~= 0
             plot_recruitment(model, axRecr);
         else
             cla(axRecr);
@@ -140,15 +146,21 @@ refresh_view();
         switch selectionMode
             case ''
             case 'motor'
-                assert(fascPatch.UserData ~= model.touchFasc);
+                if fascPatch.UserData == model.refFasc
+                    % TODO display message
+                    return;
+                end
                 model.motorFasc = fascPatch.UserData;
                 model.IaFiberId = [];
                 model.IbFiberId = [];
                 model.AlphaFiberId = [];
                 draw_fasc_selection();
-            case 'touch'
-                assert(fascPatch.UserData ~= model.motorFasc);
-                model.touchFasc = fascPatch.UserData;
+            case 'ref'
+                if fascPatch.UserData == model.motorFasc
+                    % TODO display message
+                    return;
+                end
+                model.refFasc = fascPatch.UserData;
                 draw_fasc_selection();
         end
     end
@@ -163,12 +175,12 @@ refresh_view();
             if model.motorFasc == 0
                 btnMotorFasc.Text = btnMotorFascText;
             else
-                btnMotorFasc.Text = ['Reselect motor fascicle (no. ' num2str(model.motorFasc) ')'];
+                btnMotorFasc.Text = ['Deselect motor fascicle (no. ' num2str(model.motorFasc) ')'];
             end
-            if model.touchFasc == 0
-                btnTouchFasc.Text = btnTouchFascText;
+            if model.refFasc == 0
+                btnRefFasc.Text = btnRefFascText;
             else
-                btnTouchFasc.Text = ['Reselect touch fascicle (no. ' num2str(model.touchFasc) ')'];
+                btnRefFasc.Text = ['Deselect reference fascicle (no. ' num2str(model.refFasc) ')'];
             end
             draw_cross_section();
         else
