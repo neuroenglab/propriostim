@@ -33,12 +33,7 @@ for iFasc = 1:size(model.endo.data, 1)
     end
 end
 
-% oldunits = get(gca, 'Units');
-% set(gca, 'Units', 'points');
-% pos = get(gca, 'Position');    %[X Y width height]
-% xl = xlim();
-% set(gca, 'Units', oldunits');
-% pointsPerDataUnit = pos(3) / (xl(2) - xl(1));
+scatterSize = 2;
 
 colors = hsv(model.nFiberType);
 % Plot fibers
@@ -55,23 +50,22 @@ for iFasc = 1:numel(model.fiberActive)
         h = gobjects(1, nFiberTypes);
         for iFiberType = order
             fiberId = model.fiberType(:, iFiberType);
-            h(iFiberType) = scatter(x(fiberId), y(fiberId), 2, 'x', 'MarkerEdgeColor', colors(iFiberType, :), 'PickableParts', 'none', 'HitTest', false);
+            h(iFiberType) = scatter(x(fiberId), y(fiberId), scatterSize*4, 'x', 'MarkerEdgeColor', colors(iFiberType, :), 'PickableParts', 'none', 'HitTest', false);
         end
         %h = gscatter(x, y, model.fiberTypeVector, colors, 'x', 3, false)';
         hLegend = [hLegend h];
         textLegend = [textLegend model.fiberTypeNameExt];
     else
         if isempty(activationCurr)
-            scatter(x, y, 4, 'k', 'filled', 'PickableParts', 'none', 'HitTest', false);
+            scatter(x, y, scatterSize, 'k', 'filled', 'PickableParts', 'none', 'HitTest', false);
         else
             act = activationCurr > 0;
-            %sz = pi*(fibers.r/pointsPerDataUnit.^2);  % ISSUE works in points, not data units
             % Plot inactive fibers in black
-            scatter(x(~act), y(~act), 1, 'k', 'filled', 'PickableParts', 'none', 'HitTest', false);
-            % Plot active fibers with current thresh. mapped to color
-            act = find(act);
-            act = act(randperm(numel(act)));
-            scatter(x(act), y(act), 1, activationCurr(act), 'filled', 'PickableParts', 'none', 'HitTest', false);
+            scatter(x(~act), y(~act), scatterSize, 'k', 'filled', 'PickableParts', 'none', 'HitTest', false);
+            % Plot active fibers with current threshold mapped to color
+            %act = find(act);
+            %act = act(randperm(numel(act)));  % It works but the random selection is confusing
+            scatter(x(act), y(act), scatterSize, activationCurr(act), 'filled', 'PickableParts', 'none', 'HitTest', false);
         end
     end
 end

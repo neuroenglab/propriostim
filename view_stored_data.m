@@ -107,17 +107,8 @@ refresh_view();
         % Both with ginput and drawpoint there is an offset (MATLAB bug?),
         % calibration necessary
         axes(axCross);
-        xC = mean(xlim);
-        yC = mean(ylim);
-        h = [text(0.05, 1, 'Align for calibration.', 'Units', 'normalized', 'FontWeight', 'bold'), ...
-            xline(xC), yline(yC)];
-        [x0, y0] = ginput(1);  % Calibration
-        delete(h);
-        h = text(0.05, 1, 'Select center of Ia and Ib fibers', 'Units', 'normalized', 'FontWeight', 'bold');
-        drawnow;
-        [x, y] = ginput(2);
-        delete(h);
-        model = select_fibers(model, [x - x0 + xC, y - y0 + yC]);
+        [x, y] = cluster_selection();
+        model = select_fibers(model, [x, y]);
         draw_cross_section();
     end
 

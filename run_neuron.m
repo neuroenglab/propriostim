@@ -67,19 +67,32 @@ assert(numIIFibers <= maxNumIIFibers, ...
 assert(numIIIFibers <= maxNumIIIFibers, ...
     'The chosen number of III fibers exceeds the number of fibers within the chosen diameter range (%d).', maxNumIIIFibers);
 
-model = select_fibers(model, [], minDiamIFibers, minDiamIIFibers, numIaFibers, numIbFibers, numAlphaFibers, numIIFibers, numIIIFibers);
-
 %% Plot cross-section
 figure;
-prepare_plot_cross_section(gca());
+axCross = gca();
+prepare_plot_cross_section(axCross);
 colorbar off;
-iCross = plot_cross_section(model, gca());
+iCross = plot_cross_section(model, axCross);
 motorBranches = model.endo.data{model.motorFasc, iCross};
 XY = vertcat(motorBranches{:}, model.activeSites(iAS).coord');
 minXY = min(XY);
 maxXY = max(XY);
 xlim([minXY(1) maxXY(1)]);
 ylim([minXY(2) maxXY(2)]);
+
+[iSelectionMode, tf] = listdlg('PromptString', 'Choose fiber selection mode', 'ListString', {'Random', 'Cluster'});
+if ~tf, return; end
+
+if iSelectionMode == 2
+    [x, y] = cluster_selection();
+    clusterCenters = [x, y];
+else
+    clusterCenters = [];
+end
+
+model = select_fibers(model, clusterCenters, minDiamIFibers, minDiamIIFibers, numIaFibers, numIbFibers, numAlphaFibers, numIIFibers, numIIIFibers);
+
+plot_cross_section(model, axCross);
 
 %% Run
 fibers = model.fibers{iFasc};
@@ -153,4 +166,3 @@ view_run(model);
         p = p + 1;
     end
 end
-
