@@ -12,10 +12,8 @@ classdef Model
         nrnModel = '',
         motorFasc = 0,
         refFasc = 0,
-        IaFiberId,
-        IbFiberId,
-        AlphaFiberId,
-        IIFiberId,
+        fiberType = logical.empty,  % logical iFiber x iFiberType
+        fiberTypeName = {'Alpha Motor', 'Ia', 'Ib', 'II', 'III'},
         V,
         referenceCurrent  % [A]
     end
@@ -34,79 +32,71 @@ classdef Model
             obj.nrnModel = nrnModel;
         end
         
-        function recr = recruitment(obj, iFasc, fiberId)
+        function recr = recruitment(obj, iFasc, fibersId)
+            % fiberId can be linear or logical indexes
             currFiberActive = obj.fiberActive{obj.fascIds == iFasc};
             if nargin > 2
-                currFiberActive = currFiberActive(fiberId);
+                currFiberActive = currFiberActive(fibersId);
+            else
+                currFiberActive = currFiberActive(~isnan(currFiberActive));
+            end
+            if numel(currFiberActive) == 1
+                % Just a trick to have it treated as a column
+                currFiberActive = [currFiberActive; currFiberActive];
             end
             recr = mean(currFiberActive > 0 & currFiberActive <= obj.Q);
         end
         
-        function view(obj, ax)
-            if nargin < 2
-                figure;
-                ax = gca();
+        function recr = recruitment_motor_by_type(obj, fiberType)
+            if isletter(fiberType)
+                fibersId = obj.get_fibers_by_type(fiberType);
             else
-                axes(ax);
+                fibersId = obj.fiberType(:, fiberType);
             end
-            hold on;
-            axis equal;
-            ax.Clipping = 'off';
-            cmap = colormap(ax, flipud(parula));
-            c = colorbar(ax);
-            c.Label.String = 'Charge threshold [nC]';
-            idCrossStep = 5;  % Plot z-resolution, change at will
-            idCrosses = 1:idCrossStep:size(obj.endo.data,2);
-            for idFascicle = 1:size(obj.endo.data,1)
-                for idCross = idCrosses
-                    branches = obj.endo.data{idFascicle, idCross};
-                    for idBranch = 1 : numel(branches)
-                        % Split by NaN (if holes are present)
-                        delimiters = [0; find(isnan(branches{idBranch}(:,1))); size(branches{idBranch},1)+1];
-                        for iDelimiter = 2:numel(delimiters)
-                            idx1 = delimiters(iDelimiter-1)+1;
-                            idx2 = delimiters(iDelimiter)-1;
-                            idxs = [idx1:idx2, idx1];
-                            plot3(branches{idBranch}(idxs,1), ...
-                                branches{idBranch}(idxs,2), ...
-                                branches{idBranch}(idxs,3), 'Color', [0.4 0.4 0.4]);
-                        end
-                    end
-                    plot3(obj.epi{idCross}(:,1), obj.epi{idCross}(:,2), obj.epi{idCross}(:,3), 'Color', [0.7 0.7 0.7]);
-                end
+            recr = obj.recruitment(obj.motorFasc, fibersId);
+        end
+        
+        function iFasc = motorFascRel(obj)
+            iFasc = find(obj.fascIds == obj.motorFasc, 1);
+        end
+        
+        function fibersId = get_fibers_by_type(obj, fiberTypeName)
+            iFiberType = obj.get_fiber_type_index(fiberTypeName);
+            fibersId = obj.fiberType(:, iFiberType);
+        end
+        
+        function obj = set_fiber_type(obj, fiberTypeName, fiberId)
+            iFiberType = obj.get_fiber_type_index(fiberTypeName);
+            obj.fiberType(:, iFiberType) = false;
+            obj.fiberType(fiberId, iFiberType) = true;
+        end
+        
+        function iFiberType = get_fiber_type_index(obj, fiberTypeName)
+            iFiberType = find(strcmp(obj.fiberTypeName, fiberTypeName));
+            assert(numel(iFiberType) == 1, 'Invalid fiber type');
+        end
+        
+        function val = fiberTypeNameExt(obj, ind)
+            if nargin > 1
+                val = strcat(obj.fiberTypeName(ind), ' fibers');
+            else
+                val = strcat(obj.fiberTypeName, ' fibers');
             end
-            
-            for idCross = 1:numel(obj.electrode)
-                if obj.electrode(idCross).NumRegions > 0
-                    elec_regions = regions(obj.electrode(idCross));
-                    for idElReg = 1 : numel(elec_regions)
-                        plot3(elec_regions(idElReg).Vertices([1:end,1],1), ...
-                            elec_regions(idElReg).Vertices([1:end,1],2), ...
-                            repmat(obj.epi{idCross}(1,3), [length(elec_regions( ...
-                            idElReg).Vertices([1:end,1], 1)) 1]), 'm');
-                    end
-                end
+        end
+        
+        function val = nFiberType(obj)
+            val = numel(obj.fiberTypeName);
+        end
+        
+        function val = fiberTypeVector(obj)
+            % Returns the fiber type as vector
+            if any(sum(obj.fiberType, 2) > 1)
+                warning('Some fibers are assigned more than one type, incoherent output.');
             end
-            as = obj.activeSites(obj.iAS).coord;
-            plot3(as(1), as(2),as(3),'xr', 'LineWidth', 3);
-            
-            % Plot fibers
-            maxCurr = max(cellfun(@max, obj.fiberActive));
-            caxis([0 maxCurr]);
-            cvalues = linspace(0, maxCurr, size(cmap,1));
-            for idFascicle = 1:numel(obj.fascIds)
-                activationCurr = obj.fiberActive{idFascicle};
-                act = activationCurr > 0;
-                colors = zeros(numel(activationCurr), 3);
-                colors(act, :) = interp1(cvalues, cmap, activationCurr(act));
-                for idFiber = 1:height(obj.fibers{idFascicle})
-                    centers = obj.fibers{idFascicle}.center(idFiber, idCrosses, :);
-                    plot3(centers(:, :, 1), centers(:, :, 2), centers(:, :, 3), 'Color', colors(idFiber, :));
-                end
+            [t, val] = max(obj.fiberType, [], 2);
+            if t == 0
+                val = 0;
             end
-            hold off;
-            axis off;
-            view(3);
         end
     end
     

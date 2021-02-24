@@ -1,5 +1,8 @@
 function run_neuron()
 %% Setup
+if ~isfile('config.mat')
+    make_config();
+end
 config = load('config.mat');
 MRG_coeff = load('data/MRG_coeff.mat');
 
@@ -14,28 +17,99 @@ model = load_model(subject, electrode, asList{iAS}, true);
 [iFasc, tf] = listdlg('PromptString', 'Select fascicle', 'ListString', arrayfun(@num2str, model.fascIds, 'UniformOutput', false), 'SelectionMode', 'single');
 if ~tf, return; end
 model.motorFasc = model.fascIds(iFasc);
-model = select_fibers(model, []);
 
 [iModel, tf] = listdlg('PromptString', 'Select model', 'ListString', {'MRG', 'Gaines'}, 'SelectionMode', 'single');
 if ~tf, return; end
 
 gaines = iModel == 2;
 
+%% Select fibers
+minDiamIFibers = 12;
+minDiamIIFibers = 6;
+[idIFibers, idIIFibers, idIIIFibers] = split_fibers(model, minDiamIFibers, minDiamIIFibers);
+[numIaFibers, numIbFibers, numAlphaFibers] = default_I_fibers_count(idIFibers);
+
+answer = inputdlg({'Number of Ia fibers (default 16% of diameter >= 12 um)', ...
+    'Number of Ib fibers (default 12% of diameter >= 12 um)', ...
+    'Number of Alpha Motor fibers (default 72% of diameter >= 12 um)', ...
+    'Number of II fibers (default all of diameter >= 6 and < 12 um)', ...
+    'Number of III fibers (default all of diameter < 6)', ...
+    'Minimum diameter of I and Alpha motor fibers [um]', ...
+    'Minimum diameter of II fibers [um]'}, ...
+    'Fibers population', 1, ...
+    {num2str(numIaFibers), ...
+    num2str(numIbFibers), ...
+    num2str(numAlphaFibers), ...
+    num2str(numel(idIIFibers)), ...
+    num2str(numel(idIIIFibers)), ...
+    num2str(minDiamIFibers), ...
+    num2str(minDiamIIFibers)});
+
+numIaFibers = str2double(answer{1});
+numIbFibers = str2double(answer{2});
+numAlphaFibers = str2double(answer{3});
+numIIFibers = str2double(answer{4});
+numIIIFibers = str2double(answer{5});
+minDiamIFibers = str2double(answer{6});
+minDiamIIFibers = str2double(answer{7});
+
+[idIFibers, idIIFibers, idIIIFibers] = split_fibers(model, minDiamIFibers, minDiamIIFibers);
+maxNumIFibers = numel(idIFibers);
+maxNumIIFibers = numel(idIIFibers);
+maxNumIIIFibers = numel(idIIIFibers);
+
+assert(numIaFibers + numIbFibers + numAlphaFibers <= maxNumIFibers, ...
+    'The chosen number of primary and alpha motor fibers exceeds the number of fibers within the chosen diameter range (%d).', maxNumIFibers);
+
+assert(numIIFibers <= maxNumIIFibers, ...
+    'The chosen number of II fibers exceeds the number of fibers within the chosen diameter range (%d).', maxNumIIFibers);
+
+assert(numIIIFibers <= maxNumIIIFibers, ...
+    'The chosen number of III fibers exceeds the number of fibers within the chosen diameter range (%d).', maxNumIIIFibers);
+
+model = select_fibers(model, [], minDiamIFibers, minDiamIIFibers, numIaFibers, numIbFibers, numAlphaFibers, numIIFibers, numIIIFibers);
+
+%% Plot cross-section
+figure;
+prepare_plot_cross_section(gca());
+colorbar off;
+iCross = plot_cross_section(model, gca());
+motorBranches = model.endo.data{model.motorFasc, iCross};
+XY = vertcat(motorBranches{:}, model.activeSites(iAS).coord');
+minXY = min(XY);
+maxXY = max(XY);
+xlim([minXY(1) maxXY(1)]);
+ylim([minXY(2) maxXY(2)]);
+
 %% Run
 fibers = model.fibers{iFasc};
+assignedFibers = any(model.fiberType, 2);
+nAssignedFibers = sum(assignedFibers);
 V = model.V{model.fascIds(iFasc)};
 
 % determine the current necessary to inject 1nC within the duration
 currentFor1nC = 1e-9 / (config.stimDur * 1e-3);
 V = cellfun(@(v) v * currentFor1nC / model.referenceCurrent, V, 'UniformOutput', false);
 
+% Setup waitbar
+D = parallel.pool.DataQueue;
+h = waitbar(0, 'Running NEURON simulations...');
+afterEach(D, @updateWaitbar);
+p = 1;
+
 thr = nan(height(fibers), 1);
 r = fibers.r;
-motor = model.AlphaFiberId;
+motor = model.get_fibers_by_type('Alpha Motor');
 tic();
 parfor iFiber = 1:height(fibers)
+    % Parallel execution requires Parallel Computing Toolbox, otherwise it
+    % falls back to a simple for.
+    if ~assignedFibers(iFiber)
+        % Skip unassigned fibers
+        continue;
+    end
     if gaines
-        if ismember(iFiber, motor)
+        if motor(iFiber)
             nrnModel = 'Gaines/Motor';
         else
             nrnModel = 'Gaines/Sensory';
@@ -44,9 +118,11 @@ parfor iFiber = 1:height(fibers)
         nrnModel = 'MRG';
     end
     thr(iFiber) = find_threshold(iFiber, r(iFiber), V{iFiber}, nrnModel, config, MRG_coeff);
+    send(D, iFiber);
 end
 t = toc();
-fprintf('Simulation completed, mean time %.3f s per fiber\n', t/height(fibers));
+close(h);
+fprintf('Simulation completed, mean time %.3f s per fiber\n', t/nAssignedFibers);
 
 model.Q = 0:config.deltaQnC:config.qMaxnC;
 model.fiberActive{iFasc} = thr;
@@ -68,9 +144,13 @@ while isfile(runPath)
 end
 
 fprintf('Saving model in %s...\n', runPath);
-save(runPath, 'model');
+save(runPath, 'model', 'config');
 
 view_run(model);
 
+    function updateWaitbar(~)
+        waitbar(p/nAssignedFibers, h);
+        p = p + 1;
+    end
 end
 

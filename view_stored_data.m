@@ -9,7 +9,7 @@ selectionMode = '';
 
 % Setup figure
 fig = uifigure('HandleVisibility', 'on');  % to be able to 'close' it
-fig.Position = [100 100 1080 500];
+fig.Position = [100 100 1280 640];
 g = uigridlayout(fig);
 g.RowHeight = {22, 22, 22, '1x', 22};
 g.ColumnWidth = {200,'1x','1x','1x','1x'};
@@ -57,7 +57,7 @@ refresh_view();
         btnRefFasc.Enable = ~isempty(model);
         btnMotorRandom.Enable = ~isempty(model) && model.motorFasc ~= 0;
         btnMotorCluster.Enable = btnMotorRandom.Enable;
-        btnRun.Enable = ~isempty(model) && ~isempty(model.IaFiberId);
+        btnRun.Enable = ~isempty(model) && ~isempty(model.fiberType);
         drawnow;
     end
 
@@ -76,7 +76,7 @@ refresh_view();
     end
 
     function view_button_pushed(~, ~)
-        model.view();
+        view_3d_model(model);
     end
 
     function motor_button_pushed(~, ~)
@@ -84,6 +84,7 @@ refresh_view();
             draw_fasc_selection('motor');
         else
             model.motorFasc = 0;
+            model.fiberType = logical.empty;
             draw_fasc_selection();
         end
     end
@@ -106,15 +107,17 @@ refresh_view();
         % Both with ginput and drawpoint there is an offset (MATLAB bug?),
         % calibration necessary
         axes(axCross);
+        xC = mean(xlim);
+        yC = mean(ylim);
         h = [text(0.05, 1, 'Align for calibration.', 'Units', 'normalized', 'FontWeight', 'bold'), ...
-            xline(0), yline(0)];
+            xline(xC), yline(yC)];
         [x0, y0] = ginput(1);  % Calibration
         delete(h);
         h = text(0.05, 1, 'Select center of Ia and Ib fibers', 'Units', 'normalized', 'FontWeight', 'bold');
         drawnow;
         [x, y] = ginput(2);
         delete(h);
-        model = select_fibers(model, [x - x0, y - y0]);
+        model = select_fibers(model, [x - x0 + xC, y - y0 + yC]);
         draw_cross_section();
     end
 
@@ -149,9 +152,7 @@ refresh_view();
                     return;
                 end
                 model.motorFasc = fascPatch.UserData;
-                model.IaFiberId = [];
-                model.IbFiberId = [];
-                model.AlphaFiberId = [];
+                model.fiberType = logical.empty;
                 draw_fasc_selection();
             case 'ref'
                 if fascPatch.UserData == model.motorFasc

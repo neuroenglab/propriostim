@@ -1,4 +1,4 @@
-function plot_cross_section(model, ax, fascClickCallback)
+function iCross = plot_cross_section(model, ax, fascClickCallback)
 %LOAD_CROSS_SECTION Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -40,25 +40,39 @@ end
 % set(gca, 'Units', oldunits');
 % pointsPerDataUnit = pos(3) / (xl(2) - xl(1));
 
+colors = hsv(model.nFiberType);
 % Plot fibers
 for iFasc = 1:numel(model.fiberActive)
     % N.B. fibers are plotted at a fixed radius
     fibers = model.fibers{iFasc};
     activationCurr = model.fiberActive{iFasc};
-    act = activationCurr > 0;
     x = fibers.center(:,iCross,1);
     y = fibers.center(:,iCross,2);
-    %sz = pi*(fibers.r/pointsPerDataUnit.^2);  % ISSUE works in points, not data units
-    % Plot inactive fibers in black
-    scatter(x(~act), y(~act), 4, 'k', 'filled', 'PickableParts', 'none', 'HitTest', false);
-    % Plot active fibers with current thresh. mapped to color
-    scatter(x(act), y(act), 4, activationCurr(act), 'filled', 'PickableParts', 'none', 'HitTest', false);
-    if ~isempty(model.IaFiberId) && (iFasc == find(model.motorFasc == model.fascIds))
-        hAlpha = scatter(x(model.AlphaFiberId), y(model.AlphaFiberId), 4, 'xg', 'PickableParts', 'none', 'HitTest', false);
-        hIa = scatter(x(model.IaFiberId), y(model.IaFiberId), 4, 'xm', 'PickableParts', 'none', 'HitTest', false);
-        hIb = scatter(x(model.IbFiberId), y(model.IbFiberId), 4, 'xc', 'PickableParts', 'none', 'HitTest', false);
-        hLegend = [hLegend hIa hIb hAlpha];
-        textLegend = [textLegend {'Ia fibers', 'Ib fibers', 'Alpha motor fibers'}];
+    if ~isempty(model.fiberType) && (iFasc == find(model.motorFasc == model.fascIds))
+        nFiberTypes = size(model.fiberType, 2);
+        fiberTypeCounts = sum(model.fiberType);
+        [~, order] = sort(fiberTypeCounts, 'descend');
+        h = gobjects(1, nFiberTypes);
+        for iFiberType = order
+            fiberId = model.fiberType(:, iFiberType);
+            h(iFiberType) = scatter(x(fiberId), y(fiberId), 2, 'x', 'MarkerEdgeColor', colors(iFiberType, :), 'PickableParts', 'none', 'HitTest', false);
+        end
+        %h = gscatter(x, y, model.fiberTypeVector, colors, 'x', 3, false)';
+        hLegend = [hLegend h];
+        textLegend = [textLegend model.fiberTypeNameExt];
+    else
+        if isempty(activationCurr)
+            scatter(x, y, 4, 'k', 'filled', 'PickableParts', 'none', 'HitTest', false);
+        else
+            act = activationCurr > 0;
+            %sz = pi*(fibers.r/pointsPerDataUnit.^2);  % ISSUE works in points, not data units
+            % Plot inactive fibers in black
+            scatter(x(~act), y(~act), 1, 'k', 'filled', 'PickableParts', 'none', 'HitTest', false);
+            % Plot active fibers with current thresh. mapped to color
+            act = find(act);
+            act = act(randperm(numel(act)));
+            scatter(x(act), y(act), 1, activationCurr(act), 'filled', 'PickableParts', 'none', 'HitTest', false);
+        end
     end
 end
 
@@ -90,7 +104,7 @@ xy = model.activeSites(model.iAS).coord(1:2);
 plot(xy(1), xy(2),'or', 'LineWidth', 3)
 
 if numel(hLegend) > 0
-    legend(hLegend, textLegend, 'AutoUpdate', false);
+    legend(double(hLegend), textLegend, 'AutoUpdate', false);
 else
     legend off;
 end
