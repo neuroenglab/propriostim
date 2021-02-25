@@ -26,3 +26,9 @@ After assigning the fiber type, a walking pace can be selected and
 the simulation of proprioceptive stimulation started by pressing on _Run stimulation_.
 
 ### run_neuron()
+Loads a nerve model with precomputed potentials, allows the selection of fibers per group, and runs NEURON simulations.
+
+At the first execution runs _make\_config_ to specify NEURON parameters, thay are saved in _config.mat_ and can be edited by running _make\_config_ again.
+Lets the user select active site, fascicle, and specify fiber population by number of fibers per each type. The fibers are chosen randomly or by clustering.
+Plots a cross-section to visualize the chosen fibers and runs the simulations in multithreading, if the Parallel Computing Toolbox is installed.
+Finally shows recruitment curves and saves the model in the _data/runs_ folder.
