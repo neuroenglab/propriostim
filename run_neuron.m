@@ -1,4 +1,6 @@
 function run_neuron()
+addpath('matlab');
+
 %% Setup
 if ~isfile('config.mat')
     make_config();

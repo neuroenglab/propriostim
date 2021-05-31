@@ -9,7 +9,7 @@ Visualizes previously computed recruitments and allows to run the proprioceptive
 
 Select subject, electrode, and active site from the dropdown menus and press Load.
 
-After loading a model a motor fascicle must be selected. A reference fasicle can be selected at will.
+After loading a model, a motor fascicle must be selected. A reference fascicle can be selected at will.
 It can be done by pressing the button _Select ** fascicle_ and clicking on the desired fascicle on the cross-section.
 
 The fibers within the motor fascicle can then be split by type using one of the two proposed methods:
@@ -28,7 +28,13 @@ the simulation of proprioceptive stimulation started by pressing on _Run stimula
 ### run_neuron()
 Loads a nerve model with precomputed potentials, allows the selection of fibers per group, and runs NEURON simulations.
 
-At the first execution runs _make\_config_ to specify NEURON parameters, thay are saved in _config.mat_ and can be edited by running _make\_config_ again.
+At the first execution it runs _make\_config_ to specify NEURON parameters, they are saved in _config.mat_ and can be edited by running _make\_config_ again.
 Lets the user select active site, fascicle, and specify fiber population by number of fibers per each type. The fibers are chosen randomly or by clustering.
-Plots a cross-section to visualize the chosen fibers and runs the simulations in multithreading, if the Parallel Computing Toolbox is installed.
+Plots a cross-section to visualize the chosen fibers and runs the simulations (in multithreading if the Parallel Computing Toolbox is installed).
 Finally shows recruitment curves and saves the model in the _data/runs_ folder.
+
+### view_run()
+Displays the results of simulations run with _run_neuron()_
+
+### proprio_stim()
+Runs and visualize a ProprioStim simulation from the results of a NEURON run.

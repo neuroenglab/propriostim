@@ -7,7 +7,7 @@ else
     if ~isfolder(nrnHome)
         nrnHome = 'C:\nrn';
     end
-    deltaQnC = 0.1;
+    deltaQnC = 0.01;
     qMaxnC = 120;
     nbNod = 21;
     stimStart = 0.2;

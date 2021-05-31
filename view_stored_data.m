@@ -1,4 +1,5 @@
 function view_stored_data()
+addpath('matlab');
 
 close all;
 
@@ -33,7 +34,7 @@ btnRefFasc.Layout.Column = [4 5];
 uilabel(g, 'Text', 'Motor fascicle fibers selection:', 'FontWeight', 'bold');
 btnMotorRandom = uibutton(g, 'Text', 'Random', 'ButtonPushedFcn', @random_button_pushed);
 btnMotorCluster = uibutton(g, 'Text', 'Cluster', 'ButtonPushedFcn', @cluster_button_pushed);
-ddPace = uidropdown(g, 'Items', {'Slow pace (2 s)', 'Mid pace (1.6 s)', 'Fast pace (1.2 s)'}, 'ItemsData', 1:3);
+ddPace = uidropdown(g, 'Items', list_pace(), 'ItemsData', 1:3);
 btnRun = uibutton(g, 'Text', 'Run stimulation', 'ButtonPushedFcn', @run_button_pushed);
 
 axCross = uiaxes(g);

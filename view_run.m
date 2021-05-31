@@ -1,4 +1,5 @@
-function view_run(model)
+function model = view_run(model)
+addpath('matlab');
 
 if nargin == 0
     [file, path] = uigetfile('data/runs/*.mat');

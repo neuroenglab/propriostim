@@ -1,4 +1,10 @@
 function proprio_stim(model, iPace)
+addpath('matlab');
+
+if nargin == 0
+    model = view_run();
+    iPace = listdlg('ListString', list_pace(), 'SelectionMode', 'single');
+end
 
 load('data\ProprioSim\propriosim_output.mat', 'proprioSim_firing_rate', ...
     'proprioSim_recruitment_rate', 'knee_angle', 'knee_velocity');
