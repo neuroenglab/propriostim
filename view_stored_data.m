@@ -114,7 +114,14 @@ refresh_view();
     end
 
     function run_button_pushed(~, ~)
-        proprio_stim(model, ddPace.Value);
+        med = 'Medial gastrocnemius';
+        lat = 'Lateral gastrocnemius';
+        answer = questdlg('Select muscle', 'Muscle selection', med, lat, med);
+        if strcmp(answer, med)
+            proprio_stim(model, ddPace.Value, 1, true);
+        else
+            proprio_stim(model, ddPace.Value, 2, true);
+        end
     end
 
     function update_model()

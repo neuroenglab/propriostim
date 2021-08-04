@@ -1,4 +1,5 @@
-function proprio_stim(model, iPace)
+function proprio_stim(model, iPace, iMuscle, interpolate)
+% iMuscle = 1 for medial, = 2 for lateral
 addpath('matlab');
 
 if nargin == 0
@@ -21,8 +22,12 @@ if model.refFasc
     recrRef = model.recruitment(model.refFasc);
 end
 
-% TODO choose Lateral/Medial
-[~, iStim] = min(abs(recr(:, iIa)' - proprioSim_recruitment_rate(:, 1, iPace)), [], 2);
+if interpolate
+    Q = interp1(recr(:, iIa) + cumsum(zeros(size(recr(:, iIa))) + eps), model.Q, proprioSim_recruitment_rate(:, iMuscle, iPace));
+else
+    [~, iStim] = min(abs(recr(:, iIa)' - proprioSim_recruitment_rate(:, iMuscle, iPace)), [], 2);
+    Q = model.Q(iStim);
+end
 
 figure;
 tiledlayout('flow');
@@ -34,13 +39,13 @@ ylabel('Angle [°]');
 title('Knee Angle');
 
 nexttile;
-plot(t, model.Q(iStim));
+plot(t, Q);
 xlabel('t [s]');
 ylabel('Q [nC]');
 title('Injected Charge');
 
 nexttile;
-plot(t, proprioSim_firing_rate(:, 1, iPace));
+plot(t, proprioSim_firing_rate(:, iMuscle, iPace));
 xlabel('t [s]');
 ylabel('f [Hz]');
 title('Stimulation Frequency');
@@ -50,10 +55,20 @@ hold on;
 box on;
 colors = hsv(model.nFiberType);
 for iFiberType = 1:model.nFiberType
-    plot(t, recr(iStim, iFiberType)*100, 'Color', colors(iFiberType, :), 'LineWidth', 1);
+    if interpolate
+        r = interp1(model.Q, recr(:, iFiberType), Q);
+    else
+        r = recr(iStim, iFiberType);
+    end
+    plot(t, r*100, 'Color', colors(iFiberType, :), 'LineWidth', 1);
 end
 if model.refFasc
-    plot(t, recrRef(iStim)*100, '--r', 'LineWidth', 1);
+    if interpolate
+        r = interp1(model.Q, recrRef, Q);
+    else
+        r = recrRef(iStim);
+    end
+    plot(t, r*100, '--r', 'LineWidth', 1);
     l = legend([model.fiberTypeName {'Reference fascicle'}]);
 else
     l = legend(model.fiberTypeName);
