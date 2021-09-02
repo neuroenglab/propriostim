@@ -148,7 +148,11 @@ else
 end
 
 dateString = datestr(now, 'yymmdd_HHMMSS');
-baseRunPath = ['data\runs\' strjoin({subject, electrode, ['AS' asList{iAS}], ...
+runsDir = 'data\runs\';
+if ~exist(runsDir, 'dir')
+    mkdir(runsDir);
+end
+baseRunPath = [runsDir strjoin({subject, electrode, ['AS' asList{iAS}], ...
     ['fasc' num2str(model.motorFasc)], model.nrnModel, dateString}, '_')];
 runPath = [baseRunPath '.mat'];
 counter = 0;
