@@ -28,6 +28,8 @@ the simulation of proprioceptive stimulation started by pressing on _Run stimula
 ### run_neuron()
 Loads a nerve model with precomputed potentials, allows the selection of fibers per group, and runs NEURON simulations.
 
+NB: to run the simulations it is necessary to compile the axon models in _neuron/MRG_ and _neuron/Gaines_ folders with NEURON's _mknrndll_ tool.
+
 At the first execution it runs _make\_config_ to specify NEURON parameters, they are saved in _config.mat_ and can be edited by running _make\_config_ again.
 Lets the user select active site, fascicle, and specify fiber population by number of fibers per each type. The fibers are chosen randomly or by clustering.
 Plots a cross-section to visualize the chosen fibers and runs the simulations (in multithreading if the Parallel Computing Toolbox is installed).

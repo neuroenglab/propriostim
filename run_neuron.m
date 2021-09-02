@@ -82,7 +82,7 @@ maxXY = max(XY);
 xlim([minXY(1) maxXY(1)]);
 ylim([minXY(2) maxXY(2)]);
 
-[iSelectionMode, tf] = listdlg('PromptString', 'Choose fiber selection mode', 'ListString', {'Random', 'Cluster'});
+[iSelectionMode, tf] = listdlg('PromptString', 'Choose fiber selection mode', 'ListString', {'Random', 'Cluster'}, 'SelectionMode', 'single');
 if ~tf, return; end
 
 if iSelectionMode == 2
