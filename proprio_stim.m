@@ -1,10 +1,13 @@
 function proprio_stim(model, iPace, iMuscle, interpolate)
+% Run without arguments to select model and parameters via GUI.
 % iMuscle = 1 for medial, = 2 for lateral
 addpath('matlab');
 
 if nargin == 0
     model = view_run();
     iPace = listdlg('ListString', list_pace(), 'SelectionMode', 'single');
+    iMuscle = select_muscle_dlg();
+    interpolate = true;
 end
 
 load('data\ProprioSim\propriosim_output.mat', 'proprioSim_firing_rate', ...
