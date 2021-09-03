@@ -20,7 +20,7 @@ It can be done by pressing the button _Select ** fascicle_ and clicking on the d
 The fibers within the motor fascicle can then be split by type using one of the two proposed methods:
 -   **Random**, to choose all the fibers completely randomly, within their correct diameter range.
 -   **Cluster**, to cluster *Ia* and *Ib* fibers around two chosen centers, and the _Alpha Motor_ as the others in the same diameter range.
-    Since MATLAB function _ginput_ appears to give a strong offset error, a guided calibration phase is necessary. In this first calibration phase overimpose the cursor aiming-cross over the background plot-cross and perform a left-click. After the calibration the user selects first the cluster center for the Ia fibers, and then the center of Ib fibers.
+    Since MATLAB function _ginput_ appears to give a strong offset error, a guided calibration phase is necessary. In this first calibration phase superimpose the cursor aiming-cross over the background plot-cross and perform a left-click. After the calibration the user selects first the cluster center for the Ia fibers, and then the center of Ib fibers.
 
 II and III fibers are always chosen as all the fibers within their respective diameter ranges.
 
