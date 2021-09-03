@@ -6,6 +6,9 @@ if ~isfile('config.mat')
     make_config();
 end
 config = load('config.mat');
+
+assert(exist(config.nrnBin, 'dir'), '%s is not a folder. Verify that NEURON is installed and that its path is correctly set by running make_config().', config.nrnBin);
+
 MRG_coeff = load('data/MRG_coeff.mat');
 
 subject = 'Subject1';
