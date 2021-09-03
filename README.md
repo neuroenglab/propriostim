@@ -1,5 +1,10 @@
 # proprio
 
+## Requirements
+
+MATLAB R2020b
+NEURON 7.7
+
 ## Usage
 
 Here are detailed the functions of interest for the end user:
