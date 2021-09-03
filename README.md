@@ -2,8 +2,8 @@
 
 ## Requirements
 
-MATLAB R2020b
-NEURON 7.7
+-   MATLAB R2020b
+-   NEURON 7.7
 
 ## Usage
 
