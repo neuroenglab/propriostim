@@ -6,6 +6,9 @@ if ~isfile('config.mat')
     make_config();
 end
 config = load('config.mat');
+
+assert(exist(config.nrnBin, 'dir'), '%s is not a folder. Verify that NEURON is installed and that its path is correctly set by running make_config().', config.nrnBin);
+
 MRG_coeff = load('data/MRG_coeff.mat');
 
 subject = 'Subject1';
@@ -82,7 +85,7 @@ maxXY = max(XY);
 xlim([minXY(1) maxXY(1)]);
 ylim([minXY(2) maxXY(2)]);
 
-[iSelectionMode, tf] = listdlg('PromptString', 'Choose fiber selection mode', 'ListString', {'Random', 'Cluster'});
+[iSelectionMode, tf] = listdlg('PromptString', 'Choose fiber selection mode', 'ListString', {'Random', 'Cluster'}, 'SelectionMode', 'single');
 if ~tf, return; end
 
 if iSelectionMode == 2
@@ -148,7 +151,11 @@ else
 end
 
 dateString = datestr(now, 'yymmdd_HHMMSS');
-baseRunPath = ['data\runs\' strjoin({subject, electrode, ['AS' asList{iAS}], ...
+runsDir = 'data\runs\';
+if ~exist(runsDir, 'dir')
+    mkdir(runsDir);
+end
+baseRunPath = [runsDir strjoin({subject, electrode, ['AS' asList{iAS}], ...
     ['fasc' num2str(model.motorFasc)], model.nrnModel, dateString}, '_')];
 runPath = [baseRunPath '.mat'];
 counter = 0;

@@ -114,7 +114,8 @@ refresh_view();
     end
 
     function run_button_pushed(~, ~)
-        proprio_stim(model, ddPace.Value);
+        muscle = select_muscle_dlg();
+        proprio_stim(model, ddPace.Value, muscle, true);
     end
 
     function update_model()
