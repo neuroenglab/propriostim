@@ -5,7 +5,7 @@ movementsFolder = 'data/movements';
 movements = list_subfolders(movementsFolder);
 
 % Select movement
-iMovement = listdlg('ListString', movements);
+iMovement = listdlg('ListString', movements, 'SelectionMode', 'single');
 
 movementFolder = fullfile(movementsFolder, movements{iMovement});
 
@@ -24,7 +24,7 @@ muscleElongation = cell(nMuscles, 1);
 spindleActivation = cell(nMuscles, 1);
 recruitmentCurve = cell(nMuscles, 1);
 stimulationParameters = cell(nMuscles, 1);
-ASs = arrayfun(@num2str, defaultASs(1:nMuscles), UniformOutput=false)';
+ASs = arrayfun(@num2str, defaultASs(1:nMuscles), 'UniformOutput', false)';
 targetFascicles = defaultFasc(1:nMuscles)';
 for iMuscle = 1:nMuscles
     muscleElongation{iMuscle} = readtable(fullpaths{iMuscle});
@@ -42,58 +42,72 @@ for iMuscle = 1:nMuscles
     stimulationParameters{iMuscle} = compute_stimulation_parameters(spindleActivation{iMuscle}, recruitmentCurve{iMuscle});
 end
 
-figure;
-hold on;
-title('Recruitment curve');
-for iMuscle = 1:nMuscles
-    plot(recruitmentCurve{iMuscle}.Charge, recruitmentCurve{iMuscle}.Recruitment);
-end
-legend(muscles);
-ylabel('Recruitment [%]');
-xlabel('Charge [nC]');
+%% Plots
+colors = lines(nMuscles);
 
 figure;
-tiledlayout(3, 1, 'TileSpacing', 'tight');
+tiledlayout(nMuscles, 1);
+sgtitle('Recruitment curves');
+for iMuscle = 1:nMuscles
+    nexttile;
+    title(muscles{iMuscle}, sprintf('Active Site %s - Fascicle %d', ASs{iMuscle}, targetFascicles(iMuscle)));
+    hold on;
+    plot(recruitmentCurve{iMuscle}.Charge, recruitmentCurve{iMuscle}.Recruitment, 'Color', colors(iMuscle, :));
+    ylabel('Recruitment [%]');
+    xlabel('Charge [nC]');
+end
+
+figure;
+tiledlayout(4, 1, 'TileSpacing', 'tight');
 nexttile;
-title('Muscle elongations');
+title('Muscle Elongations');
 hold on;
 for iMuscle = 1:nMuscles
-    plot(muscleElongation{iMuscle}.t, muscleElongation{iMuscle}.Elongation);
+    plot(muscleElongation{iMuscle}.t, muscleElongation{iMuscle}.Elongation, 'Color', colors(iMuscle, :));
 end
 legend(muscles);
 xlabel('t [s]');
 ylabel('Elongation');
 
 nexttile;
-title('Spindles activity');
+title('Spindles Activity');
 hold on;
 yyaxis left;
 for iMuscle = 1:nMuscles
-    plot(spindleActivation{iMuscle}.t, spindleActivation{iMuscle}.Recruitment);
+    h = plot(spindleActivation{iMuscle}.t, spindleActivation{iMuscle}.Recruitment, '-', 'Color', colors(iMuscle, :));
+    if iMuscle == 1
+        hRecr = h;
+    end
 end
-legend(muscles, "AutoUpdate", "off");
 ylabel('Recruitment [%]');
 hold on;
 yyaxis right;
 for iMuscle = 1:nMuscles
-    plot(spindleActivation{iMuscle}.t, spindleActivation{iMuscle}.FiringRate);
+    h = plot(spindleActivation{iMuscle}.t, spindleActivation{iMuscle}.FiringRate, '--', 'Color', colors(iMuscle, :));
+    if iMuscle == 1
+        hFR = h;
+    end
 end
 ylabel('Firing Rate [Hz]');
 xlabel('t [s]');
+legend([hRecr hFR], {'Recruitment', 'Firing Rate'});
+ax = gca;
+ax.YAxis(1).Color = 'k';
+ax.YAxis(2).Color = 'k';
 
 nexttile;
-title('Stimulation parameters');
+title('Stimulation Charge');
 hold on;
-yyaxis left;
 for iMuscle = 1:nMuscles
-    plot(stimulationParameters{iMuscle}.t, stimulationParameters{iMuscle}.Charge);
+    plot(stimulationParameters{iMuscle}.t, stimulationParameters{iMuscle}.Charge, 'Color', colors(iMuscle, :));
 end
-legend(muscles, "AutoUpdate", "off");
 ylabel('Charge [nC]');
+
+nexttile;
+title('Stimulation Frequency');
 hold on;
-yyaxis right;
 for iMuscle = 1:nMuscles
-    plot(stimulationParameters{iMuscle}.t, stimulationParameters{iMuscle}.Frequency);
+    plot(stimulationParameters{iMuscle}.t, stimulationParameters{iMuscle}.Frequency, 'Color', colors(iMuscle, :));
 end
 ylabel('Frequency [Hz]');
 xlabel('t [s]');
