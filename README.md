@@ -1,12 +1,23 @@
-# proprio
+# propriostim
 
 ## Requirements
 
--   MATLAB R2020b
--   NEURON 7.7
+-   MATLAB R2020b or higher
+-   NEURON 7.7 or higher
 
-## Usage
+## Main usage
 
+The `main` script allows to visualize joint kinematics, muscle elongations, and to compute corresponding ProprioStim and linear-charge stimulation parameters
+for 10 different movements: Walking (ground level), Walking slow (ground level), Walking fast (ground level), Walking (downslope), Walking (upslope), 
+Initial step walking,  Final step walking, Standing, Sit to stand, Squatting.
+The ProprioStim encoding uses recruitment curves computed as logistic curves fit to modeling results for pre-selected, exemplary active site-fascicle combinations.
+A higher level of customization, including the possibility to repopulate the nerve with custom fiber populations and to re-run NEURON simulations,
+is available through `neuron-demo`.
+
+## Usage of neuron-demo
+
+The code in `neuron-demo` allows to visualize the detailed results of the simulations for 4 exemplary electrode placements,
+and to recompute fiber thresholds and ProprioStim stimulation parameters for custom fiber distributions.
 Here are detailed the functions of interest for the end user:
 
 ### view_stored_data()
@@ -31,8 +42,6 @@ the simulation of proprioceptive stimulation started by pressing on _Run stimula
 
 ### run_neuron()
 Loads a nerve model with precomputed potentials, allows the selection of fibers per group, and runs NEURON simulations.
-
-NB: to run the simulations it is necessary to compile the axon models in _neuron/MRG_ and _neuron/Gaines_ folders with NEURON's _mknrndll_ tool.
 
 At the first execution it runs _make\_config_ to specify NEURON parameters, they are saved in _config.mat_ and can be edited by running _make\_config_ again.
 Lets the user select active site, fascicle, and specify fiber population by number of fibers per each type. The fibers are chosen randomly or by clustering.

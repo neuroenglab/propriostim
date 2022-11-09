@@ -2,13 +2,13 @@ function fibThreshold = find_threshold(fibId, rFib, fiberV, nrnModel, config, MR
 
 switch nrnModel
     case 'Gaines/Motor'
-        dirModel = 'neuron\Gaines\';
+        dirModel = 'neuron-demo\neuron\Gaines\';
         hocName = 'motor.hoc';
     case 'Gaines/Sensory'
-        dirModel = 'neuron\Gaines\';
+        dirModel = 'neuron-demo\neuron\Gaines\';
         hocName = 'sensory.hoc';
     case 'MRG'
-        dirModel = 'neuron\MRG\';
+        dirModel = 'neuron-demo\neuron\MRG\';
         hocName = 'MRGaxon.hoc';
     otherwise
         error('nrnModel invalid');

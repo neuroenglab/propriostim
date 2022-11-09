@@ -1,5 +1,5 @@
 function run_neuron()
-addpath('matlab');
+addpath('neuron-demo\matlab');
 
 %% Setup
 if ~isfile('config.mat')
@@ -119,6 +119,12 @@ thr = nan(height(fibers), 1);
 r = fibers.r;
 motor = model.get_fibers_by_type('Alpha Motor');
 tic();
+if gaines
+    build_neuron_dll('Gaines/Motor');
+    build_neuron_dll('Gaines/Sensory');
+else
+    build_neuron_dll('MRG');
+end
 parfor iFiber = 1:height(fibers)
     % Parallel execution requires Parallel Computing Toolbox, otherwise it
     % falls back to a simple for.
