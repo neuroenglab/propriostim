@@ -7,9 +7,25 @@ movements = list_subfolders(movementsFolder);
 % Select movement
 iMovement = listdlg('ListString', movements, 'SelectionMode', 'single');
 
-movementFolder = fullfile(movementsFolder, movements{iMovement});
+movement = movements{iMovement};
 
+movementFolder = fullfile(movementsFolder, movement);
+
+%% Load kinematics
+[joints, jointPaths] = list_csv(fullfile(movementFolder, 'kinematics'));
+nJoints = numel(joints);
+jointAngles = cell(nJoints, 1);
+for iJoint = 1:nJoints
+    jointAngles{iJoint} = readtable(jointPaths{iJoint});
+    % To rename columns of tables saved in old format:
+    %jointAngles{iJoint} = renamevars(jointAngles{iJoint}, joints{iJoint}, 'Angle');
+    %writetable(jointAngles{iJoint}, jointPaths{iJoint});
+end
+joints = cellfun(@(s) replace([upper(s(1)) s(2:end)], '_', ' '), joints, 'UniformOutput', false);
+
+%% Load muscle elongations
 [muscles, fullpaths] = list_csv(movementFolder);
+muscles = cellfun(@(s) replace([upper(s(1)) s(2:end)], '_', ' '), muscles, 'UniformOutput', false);
 
 fprintf('%d muscles found in the movement folder: %s\n', numel(muscles), strjoin(muscles, ', '));
 
@@ -42,7 +58,7 @@ for iMuscle = 1:nMuscles
     stimulationParameters{iMuscle} = compute_stimulation_parameters(spindleActivation{iMuscle}, recruitmentCurve{iMuscle});
 end
 
-%% Plots
+%% Recruitment Plots
 colors = lines(nMuscles);
 
 figure;
@@ -57,8 +73,14 @@ for iMuscle = 1:nMuscles
     xlabel('Charge [nC]');
 end
 
+%% ProprioStim Plots
 figure;
-tiledlayout(4, 1, 'TileSpacing', 'tight');
+tiledlayout(5, 1, 'TileSpacing', 'tight');
+sgtitle([movement ' - ProprioStim']);
+
+nexttile;
+title('Joint Kinematics');
+
 nexttile;
 title('Muscle Elongations');
 hold on;
