@@ -17,13 +17,13 @@ Activation = muscleState.Activation;
 
 %% RECRUITMENT RATE obtained via interpolation from Botterman et al. 1982
 % experimental data
-SpindelsRecruitmentRate = [[0 15 25 40 50 65 100]/(100*2);
+SpindlesRecruitmentRate = [[0 15 25 40 50 65 100]/(100*2);
         [3 4 7 13 21 24 24]/24]';
     
 muscle_elongation = zeros(size(Elongation));
 muscle_elongation((Elongation)>=0) = Elongation(Elongation>=0,1);
-recruitment_rate = interp1(SpindelsRecruitmentRate(:,1), ...
-    SpindelsRecruitmentRate(:,2), muscle_elongation);
+recruitment_rate = interp1(SpindlesRecruitmentRate(:,1), ...
+    SpindlesRecruitmentRate(:,2), muscle_elongation);
 
 %% POPULATION FIRING RATE computed with the riparametrized prochazka model on human data
 

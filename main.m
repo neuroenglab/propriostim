@@ -14,9 +14,9 @@ movementFolder = fullfile(movementsFolder, movement);
 %% Load kinematics
 [joints, jointPaths] = list_csv(fullfile(movementFolder, 'kinematics'));
 nJoints = numel(joints);
-jointAngles = cell(nJoints, 1);
+jointKinematics = cell(nJoints, 1);
 for iJoint = 1:nJoints
-    jointAngles{iJoint} = readtable(jointPaths{iJoint});
+    jointKinematics{iJoint} = readtable(jointPaths{iJoint});
     % To rename columns of tables saved in old format:
     %jointAngles{iJoint} = renamevars(jointAngles{iJoint}, joints{iJoint}, 'Angle');
     %writetable(jointAngles{iJoint}, jointPaths{iJoint});
@@ -39,13 +39,11 @@ nMuscles = numel(muscles);
 muscleElongation = cell(nMuscles, 1);
 spindleActivation = cell(nMuscles, 1);
 recruitmentCurve = cell(nMuscles, 1);
-stimulationParameters = cell(nMuscles, 1);
+psStimulationParameters = cell(nMuscles, 1);
+linearStimulationParameters = cell(nMuscles, 1);
 ASs = arrayfun(@num2str, defaultASs(1:nMuscles), 'UniformOutput', false)';
 targetFascicles = defaultFasc(1:nMuscles)';
 for iMuscle = 1:nMuscles
-    muscleElongation{iMuscle} = readtable(fullpaths{iMuscle});
-    spindleActivation{iMuscle} = compute_spindle_activation(muscleElongation{iMuscle});
-    
     %% Load recruitment curves from stored data
     % TODO allow loading custom recruitment curves as csv from data/recruitment-curves
     model = load_model(subject, electrode, ASs{iMuscle}, false);
@@ -54,8 +52,16 @@ for iMuscle = 1:nMuscles
     recruitmentCurve{iMuscle} = recruitment_curve_from_data(model);
     % Fit the recruitmentwith a logistic curve:
     recruitmentCurve{iMuscle} = logistic_recruitment_curve(recruitmentCurve{iMuscle}.Charge, recruitmentCurve{iMuscle}.Recruitment);
+    
+    %% Compute ProprioStim encoding
+    muscleElongation{iMuscle} = readtable(fullpaths{iMuscle});
+    spindleActivation{iMuscle} = compute_spindle_activation(muscleElongation{iMuscle});
+    psStimulationParameters{iMuscle} = compute_stimulation_parameters(spindleActivation{iMuscle}, recruitmentCurve{iMuscle});
 
-    stimulationParameters{iMuscle} = compute_stimulation_parameters(spindleActivation{iMuscle}, recruitmentCurve{iMuscle});
+    %% Compute linear encoding
+    % Linear charge encoding between 10% and 90% recruitment
+    chargeRange = interp1(recruitmentCurve{iMuscle}.Recruitment, recruitmentCurve{iMuscle}.Charge, [0.1 0.9]);
+    linearStimulationParameters{iMuscle} = compute_linear_encoding(jointKinematics{strcmp(joints, 'Knee')}, chargeRange(1), chargeRange(2));
 end
 
 %% Recruitment Plots
@@ -75,6 +81,37 @@ for iMuscle = 1:nMuscles
     xlabel('Charge [nC]');
 end
 
+%% Linear Encoding Plots
+figure;
+tiledlayout(3, 1, 'TileSpacing', 'tight');
+sgtitle([movement ' - Linear Encoding']);
+
+nexttile;
+title('Joint Kinematics');
+hold on;
+for iJoint = 1:nJoints
+    plot(jointKinematics{iJoint}.t, jointKinematics{iJoint}.Angle, 'Color', jColors(iJoint, :));
+end
+legend(joints);
+ylabel('Angle [°]');
+
+nexttile;
+title('Stimulation Charge');
+hold on;
+for iMuscle = 1:nMuscles
+    plot(linearStimulationParameters{iMuscle}.t, linearStimulationParameters{iMuscle}.Charge, 'Color', mColors(iMuscle, :));
+end
+ylabel('Charge [nC]');
+
+nexttile;
+title('Stimulation Frequency');
+hold on;
+for iMuscle = 1:nMuscles
+    plot(linearStimulationParameters{iMuscle}.t, linearStimulationParameters{iMuscle}.Frequency, 'Color', mColors(iMuscle, :));
+end
+ylabel('Frequency [Hz]');
+xlabel('t [s]');
+
 %% ProprioStim Plots
 figure;
 tiledlayout(5, 1, 'TileSpacing', 'tight');
@@ -84,10 +121,9 @@ nexttile;
 title('Joint Kinematics');
 hold on;
 for iJoint = 1:nJoints
-    plot(jointAngles{iJoint}.t, jointAngles{iJoint}.Angle, 'Color', jColors(iJoint, :));
+    plot(jointKinematics{iJoint}.t, jointKinematics{iJoint}.Angle, 'Color', jColors(iJoint, :));
 end
 legend(joints);
-xlabel('t [s]');
 ylabel('Angle [°]');
 
 nexttile;
@@ -97,7 +133,6 @@ for iMuscle = 1:nMuscles
     plot(muscleElongation{iMuscle}.t, muscleElongation{iMuscle}.Elongation, 'Color', mColors(iMuscle, :));
 end
 legend(muscles);
-xlabel('t [s]');
 ylabel('Elongation');
 
 nexttile;
@@ -120,7 +155,6 @@ for iMuscle = 1:nMuscles
     end
 end
 ylabel('Firing Rate [Hz]');
-xlabel('t [s]');
 legend([hRecr hFR], {'Recruitment', 'Firing Rate'});
 ax = gca;
 ax.YAxis(1).Color = 'k';
@@ -130,7 +164,7 @@ nexttile;
 title('Stimulation Charge');
 hold on;
 for iMuscle = 1:nMuscles
-    plot(stimulationParameters{iMuscle}.t, stimulationParameters{iMuscle}.Charge, 'Color', mColors(iMuscle, :));
+    plot(psStimulationParameters{iMuscle}.t, psStimulationParameters{iMuscle}.Charge, 'Color', mColors(iMuscle, :));
 end
 ylabel('Charge [nC]');
 
@@ -138,7 +172,7 @@ nexttile;
 title('Stimulation Frequency');
 hold on;
 for iMuscle = 1:nMuscles
-    plot(stimulationParameters{iMuscle}.t, stimulationParameters{iMuscle}.Frequency, 'Color', mColors(iMuscle, :));
+    plot(psStimulationParameters{iMuscle}.t, psStimulationParameters{iMuscle}.Frequency, 'Color', mColors(iMuscle, :));
 end
 ylabel('Frequency [Hz]');
 xlabel('t [s]');
