@@ -9,7 +9,10 @@ function spindleActivation = compute_spindle_activation(muscleState)
 
 % Creation of auxiliary variables
 Elongation = muscleState.Elongation;
-ElongationVel = diff(muscleState.Elongation)/...
+w = gausswin(30, 10);
+w = w/sum(w);
+Elongation = filter(w, 1, Elongation);
+ElongationVel = diff(Elongation)/...
     (muscleState.t(2) - muscleState.t(1));
 % Compensating for missing value due to the differential
 ElongationVel = [ElongationVel; ElongationVel(end)];
