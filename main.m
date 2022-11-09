@@ -59,7 +59,9 @@ for iMuscle = 1:nMuscles
 end
 
 %% Recruitment Plots
-colors = lines(nMuscles);
+colors = lines(nMuscles + nJoints);
+mColors = colors(1:nMuscles, :);
+jColors = colors(nMuscles+1:end, :);
 
 figure;
 tiledlayout(nMuscles, 1);
@@ -68,7 +70,7 @@ for iMuscle = 1:nMuscles
     nexttile;
     title(muscles{iMuscle}, sprintf('Active Site %s - Fascicle %d', ASs{iMuscle}, targetFascicles(iMuscle)));
     hold on;
-    plot(recruitmentCurve{iMuscle}.Charge, recruitmentCurve{iMuscle}.Recruitment, 'Color', colors(iMuscle, :));
+    plot(recruitmentCurve{iMuscle}.Charge, recruitmentCurve{iMuscle}.Recruitment, 'Color', mColors(iMuscle, :));
     ylabel('Recruitment [%]');
     xlabel('Charge [nC]');
 end
@@ -80,12 +82,19 @@ sgtitle([movement ' - ProprioStim']);
 
 nexttile;
 title('Joint Kinematics');
+hold on;
+for iJoint = 1:nJoints
+    plot(jointAngles{iJoint}.t, jointAngles{iJoint}.Angle, 'Color', jColors(iJoint, :));
+end
+legend(joints);
+xlabel('t [s]');
+ylabel('Angle [°]');
 
 nexttile;
 title('Muscle Elongations');
 hold on;
 for iMuscle = 1:nMuscles
-    plot(muscleElongation{iMuscle}.t, muscleElongation{iMuscle}.Elongation, 'Color', colors(iMuscle, :));
+    plot(muscleElongation{iMuscle}.t, muscleElongation{iMuscle}.Elongation, 'Color', mColors(iMuscle, :));
 end
 legend(muscles);
 xlabel('t [s]');
@@ -96,7 +105,7 @@ title('Spindles Activity');
 hold on;
 yyaxis left;
 for iMuscle = 1:nMuscles
-    h = plot(spindleActivation{iMuscle}.t, spindleActivation{iMuscle}.Recruitment, '-', 'Color', colors(iMuscle, :));
+    h = plot(spindleActivation{iMuscle}.t, spindleActivation{iMuscle}.Recruitment, '-', 'Color', mColors(iMuscle, :));
     if iMuscle == 1
         hRecr = h;
     end
@@ -105,7 +114,7 @@ ylabel('Recruitment [%]');
 hold on;
 yyaxis right;
 for iMuscle = 1:nMuscles
-    h = plot(spindleActivation{iMuscle}.t, spindleActivation{iMuscle}.FiringRate, '--', 'Color', colors(iMuscle, :));
+    h = plot(spindleActivation{iMuscle}.t, spindleActivation{iMuscle}.FiringRate, '--', 'Color', mColors(iMuscle, :));
     if iMuscle == 1
         hFR = h;
     end
@@ -121,7 +130,7 @@ nexttile;
 title('Stimulation Charge');
 hold on;
 for iMuscle = 1:nMuscles
-    plot(stimulationParameters{iMuscle}.t, stimulationParameters{iMuscle}.Charge, 'Color', colors(iMuscle, :));
+    plot(stimulationParameters{iMuscle}.t, stimulationParameters{iMuscle}.Charge, 'Color', mColors(iMuscle, :));
 end
 ylabel('Charge [nC]');
 
@@ -129,7 +138,7 @@ nexttile;
 title('Stimulation Frequency');
 hold on;
 for iMuscle = 1:nMuscles
-    plot(stimulationParameters{iMuscle}.t, stimulationParameters{iMuscle}.Frequency, 'Color', colors(iMuscle, :));
+    plot(stimulationParameters{iMuscle}.t, stimulationParameters{iMuscle}.Frequency, 'Color', mColors(iMuscle, :));
 end
 ylabel('Frequency [Hz]');
 xlabel('t [s]');
