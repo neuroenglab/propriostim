@@ -1,8 +1,8 @@
-function recruitmentCurve = logistic_recruitment_curve(threshold10, threshold90)
-errFun = @(k_x0) abs(logistic(k_x0(1), k_x0(2), threshold10) - 0.1) + abs(logistic(k_x0(1), k_x0(2), threshold90) - 0.9);
+function recruitmentCurve = logistic_recruitment_curve(Q, recruitment)
+errFun = @(k_x0) sum((logistic(k_x0(1), k_x0(2), Q) - recruitment).^2);
 k_x0 = fminsearch(errFun, [1 1]);
 
-Charge = linspace(0, threshold90*2)';
+Charge = linspace(0, 1/k_x0(1)*12)';
 Recruitment = logistic(k_x0(1), k_x0(2), Charge);
 
 [Recruitment, iUnique] = unique(Recruitment); % remove doubled points

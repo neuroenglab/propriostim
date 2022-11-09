@@ -1,5 +1,5 @@
 function view_stored_data()
-addpath('matlab');
+addpath('neuron-demo/matlab');
 
 close all;
 

@@ -19,7 +19,7 @@ if loadPotentials
     referenceCurrent = currentDensityAm2 * 0.08e-3^2 * pi;
 else
     nrnModel = 'MRG';  % TODO allow selection
-    load(['data\Recruitment\' modelName '\' nrnModel '\recruitment_1_' modelNameAS '.mat'], 'fiberActive', 'deltaQnC', 'qMaxnC');
+    [fiberActive, deltaQnC, qMaxnC] = load_thresholds(modelName, as);
 end
 
 %fascIdsAllAs = find(any(fascIdsByAs));
