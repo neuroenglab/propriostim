@@ -1,6 +1,14 @@
 addpath('helpers');
 addpath('neuron-demo\matlab');
-movementsFolder = 'data/movements';
+
+dataFolder = 'data';
+
+if ~isfolder(dataFolder)
+    warning('Download data.zip and extract its contents in folder data.');
+    return;
+end
+
+movementsFolder = fullfile(dataFolder, 'movements');
 
 movements = list_subfolders(movementsFolder);
 

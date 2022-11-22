@@ -3,7 +3,8 @@
 ## Requirements
 
 -   MATLAB R2020b or higher
--   NEURON 7.7 or higher
+-   Download and extract `data.zip` from [Zenodo](https://doi.org/10.5281/zenodo.5159752) in `data` folder in this directory.
+-   For neuron-demo: NEURON 7.7 or higher
 
 ## Main usage
 
