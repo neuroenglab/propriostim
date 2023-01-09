@@ -5,4 +5,4 @@
 *.dll
 *.dat
 config.mat
-data/runs/*
+data/
